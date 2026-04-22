@@ -1,0 +1,89 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_KEEP_ALIVE: ${OCKHAM_OLLAMA_KEEP_ALIVE:-10m}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,ollama}
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 20s
+
+  ollama-init:
+    image: curlimages/curl:8.8.0
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OCKHAM_OLLAMA_MODEL: ${OCKHAM_OLLAMA_MODEL:-llama3.2:3b}
+    command: >
+      sh -c '
+      echo "Waiting for Ollama API...";
+      until curl -fsS http://ollama:11434/api/tags >/dev/null; do sleep 2; done;
+      echo "Pulling model: $$OCKHAM_OLLAMA_MODEL";
+      curl -fsS http://ollama:11434/api/pull \
+        -H "Content-Type: application/json" \
+        -d "{\"model\":\"$$OCKHAM_OLLAMA_MODEL\",\"stream\":false}";
+      echo "Ollama model pull finished.";'
+    restart: "no"
+
+  backend:
+    tty: true
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OCKHAM_API_HOST: 0.0.0.0
+      OCKHAM_API_PORT: ${OCKHAM_API_PORT:-8000}
+      OCKHAM_LOG_TO_FILE: ${OCKHAM_LOG_TO_FILE:-true}
+      OCKHAM_LOG_LEVEL: ${OCKHAM_LOG_LEVEL:-INFO}
+      OCKHAM_ENABLE_LLM_RANKING: ${OCKHAM_ENABLE_LLM_RANKING:-true}
+      OCKHAM_OLLAMA_BASE_URL: http://ollama:11434
+      OCKHAM_OLLAMA_MODEL: ${OCKHAM_OLLAMA_MODEL:-llama3.2:3b}
+      OCKHAM_OLLAMA_TIMEOUT_SECONDS: ${OCKHAM_OLLAMA_TIMEOUT_SECONDS:-120}
+      OCKHAM_OLLAMA_MAX_RETRIES: ${OCKHAM_OLLAMA_MAX_RETRIES:-1}
+      OCKHAM_OLLAMA_KEEP_ALIVE: ${OCKHAM_OLLAMA_KEEP_ALIVE:-10m}
+      OCKHAM_CORS_ORIGINS: ${OCKHAM_CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:8080}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ockham_db_data:/app/backend/data
+      - ockham_dataset_storage:/app/backend/storage/datasets
+      - ockham_experiment_storage:/app/backend/storage/experiments
+      - ockham_log_storage:/app/backend/storage/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  ockham_db_data:
+  ockham_dataset_storage:
+  ockham_experiment_storage:
+  ockham_log_storage:
+  ollama_data:

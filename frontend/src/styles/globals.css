@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0B1020;
+  --graphite: #111827;
+  --slate: #4B5563;
+  --muted: #6B7280;
+  --mist: #EDF4F8;
+  --paper: #F8FBFD;
+  --line: #D7E4EA;
+  --white: #FFFFFF;
+  --blue-900: #0838B8;
+  --blue-800: #0A49C2;
+  --blue-700: #0868C8;
+  --cyan-600: #0DA9C2;
+  --cyan-500: #18C8C4;
+  --mint-400: #7EDAD0;
+  --ice-300: #C4ECE8;
+  --success: #12B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  --background-rgb: 244 248 251;
+  --foreground-rgb: 11 16 32;
+  --card-rgb: 255 255 255;
+  --border-rgb: 215 228 234;
+  --muted-rgb: 107 114 128;
+  --secondary-rgb: 237 244 248;
+  --primary-rgb: 10 73 194;
+  --success-rgb: 18 185 129;
+  --warning-rgb: 245 158 11;
+  --danger-rgb: 239 68 68;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow: auto;
+  color: rgb(var(--foreground-rgb));
+  font-family: Inter, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(10,73,194,0.16), transparent 26%),
+    radial-gradient(circle at top right, rgba(24,200,196,0.12), transparent 22%),
+    linear-gradient(180deg, #f8fbfd 0%, #eef5f9 100%);
+}
+button, input, select, textarea { font: inherit; }
+::selection { background: rgba(10,73,194,0.16); color: rgb(var(--foreground-rgb)); }
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(10,73,194,0.32), rgba(24,200,196,0.28));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+
+@layer base {
+  body { @apply antialiased; }
+}
+
+@layer utilities {
+  .font-heading { font-family: 'Space Grotesk', Inter, sans-serif; }
+  .gradient-primary { background-image: linear-gradient(135deg, var(--blue-800), var(--cyan-500)); }
+  .ockham-gradient-text {
+    background-image: linear-gradient(135deg, var(--blue-800), var(--cyan-500));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .card-shadow { box-shadow: 0 12px 32px rgba(11,16,32,0.08); }
+  .card-shadow-md { box-shadow: 0 18px 42px rgba(11,16,32,0.12); }
+  .panel-glass {
+    background: rgba(255,255,255,0.56);
+    border: 1px solid rgba(255,255,255,0.55);
+    box-shadow: 0 18px 42px rgba(11,16,32,0.08);
+    backdrop-filter: blur(18px);
+  }
+  .panel-soft {
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(215,228,234,0.82);
+    box-shadow: 0 12px 26px rgba(11,16,32,0.06);
+    backdrop-filter: blur(14px);
+  }
+  .panel-dark {
+    background: linear-gradient(180deg, rgba(11,16,32,0.96) 0%, rgba(17,24,39,0.96) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 24px 64px rgba(5,11,28,0.35);
+    backdrop-filter: blur(18px);
+  }
+  .sidebar-dark {
+    background:
+      linear-gradient(180deg, rgba(11,16,32,0.98) 0%, rgba(17,24,39,0.98) 100%),
+      radial-gradient(circle at top right, rgba(24,200,196,0.08), transparent 20%);
+    backdrop-filter: blur(24px);
+  }
+  .ockham-card-hover { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .ockham-card-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px rgba(11,16,32,0.09);
+    border-color: rgba(10,73,194,0.18);
+  }
+  .metric-card-gradient-0 { background: linear-gradient(180deg, rgba(238,244,255,0.92), rgba(255,255,255,0.82)); }
+  .metric-card-gradient-1 { background: linear-gradient(180deg, rgba(255,247,237,0.92), rgba(255,255,255,0.82)); }
+  .metric-card-gradient-2 { background: linear-gradient(180deg, rgba(245,243,255,0.92), rgba(255,255,255,0.82)); }
+  .metric-card-gradient-3 { background: linear-gradient(180deg, rgba(236,253,245,0.92), rgba(255,255,255,0.82)); }
+  .metric-card-gradient-4 { background: linear-gradient(180deg, rgba(236,254,255,0.92), rgba(255,255,255,0.82)); }
+}
+
+.recharts-cartesian-grid line { stroke: rgba(215,228,234,0.9); }
+.recharts-tooltip-wrapper { outline: none; }
