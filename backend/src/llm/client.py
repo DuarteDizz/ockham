@@ -1,24 +1,19 @@
-"""Client entrypoint for Ockham LLM ranking.
-
-This module keeps the LLM path intentionally small: build the prompt payload,
-call the provider, parse the answer, optionally repair invalid-but-usable
-responses, and finally fall back to the deterministic score ranking when the
-provider path is disabled or fails.
-"""
+"""Client entrypoint for Ockham LLM ranking."""
 
 from loguru import logger
 
 from src.config import settings
-from src.llm.parser import parse_llm_decision
 from src.llm.payloads import build_prompt_payload
 from src.llm.provider import (
     LLM_PROVIDER_NAME,
     invoke_ollama_ranking,
     invoke_ollama_ranking_repair,
 )
+from src.llm.parser import parse_llm_decision
 from src.llm.schemas import LlmRankingResult, LlmRankingStatus, OckhamRankingDecision
 from src.llm.text_utils import read_message_text, shorten_text
 from src.ml.contracts import OckhamEvidenceItem
+
 
 FALLBACK_PROVIDER_NAME = "deterministic_score_fallback"
 MISSING_RANK_SORT_VALUE = 999_999
@@ -48,12 +43,13 @@ def is_repairable_llm_output_error(exc: Exception) -> bool:
         "does not contain a valid json object",
         "response json must be an object",
         "returned an empty response",
-        "llm returned an empty response",
         "unknown model_id",
         "contains duplicate model_ids",
         "does not cover all candidate model_ids exactly once",
         "recommended_model_id does not match rank 1",
         "validation error for ockhamrankingdecision",
+        "ranking is empty",
+        "does not define a valid rank 1 candidate",
     )
 
     return any(pattern in error_message for pattern in repairable_patterns)

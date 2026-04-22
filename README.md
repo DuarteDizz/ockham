@@ -99,7 +99,6 @@ For each experiment, Ockham combines two ranking perspectives:
 When LLM ranking is enabled, the backend sends a compact structured evidence payload to Ollama and validates the returned structured decision before applying it.
 
 ![Score ranking versus Ockham ranking](docs/assets/screenshots/score-vs-ockham-ranking.png)
-*Best conceptual screenshot: a side-by-side or clearly labeled view showing how metric-first ranking differs from the Ockham recommendation.*
 
 ## Core features
 

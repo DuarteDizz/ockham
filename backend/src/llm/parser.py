@@ -9,12 +9,14 @@ from src.llm.schemas import OckhamRankingDecision
 from src.llm.text_utils import read_message_text, shorten_text
 from src.ml.contracts import OckhamEvidenceItem
 
+
 RECOMMENDED_MODEL_FIELD_NAMES = (
     "recommended_model_id",
     "selected_model_id",
     "chosen_model_id",
     "best_model_id",
 )
+
 RANKED_MODEL_FIELD_NAMES = (
     "ranked_model_ids",
     "ranking",
@@ -75,7 +77,7 @@ def read_recommended_candidate_id(
     payload: dict[str, Any],
     candidate_id_map: dict[str, str],
 ) -> str | None:
-    """Read the recommended candidate id across the known LLM field aliases."""
+    """Read an optional recommended candidate id across known aliases."""
     for field_name in RECOMMENDED_MODEL_FIELD_NAMES:
         value = payload.get(field_name)
         if value is None:
@@ -128,17 +130,50 @@ def read_ranked_candidate_ids(
     return ranked_candidate_ids
 
 
+def reconcile_ranking_only_output(
+    recommended_candidate_id: str | None,
+    ranked_candidate_ids: list[str],
+) -> tuple[str | None, list[str]]:
+    """Normalize ranked output and infer recommended_model_id from rank 1.
+
+    The LLM is now allowed to return only:
+    {
+      "ranked_model_ids": [...]
+    }
+
+    In that case, recommended_model_id is inferred from the first ranking item.
+
+    If the LLM still returns recommended_model_id, we keep it compatible by
+    reconciling it with the ranking.
+    """
+    normalized_ranking: list[str] = []
+    for candidate_id in ranked_candidate_ids:
+        if candidate_id not in normalized_ranking:
+            normalized_ranking.append(candidate_id)
+
+    if recommended_candidate_id is None:
+        if normalized_ranking:
+            recommended_candidate_id = normalized_ranking[0]
+        return recommended_candidate_id, normalized_ranking
+
+    if recommended_candidate_id in normalized_ranking:
+        normalized_ranking = [recommended_candidate_id] + [
+            candidate_id
+            for candidate_id in normalized_ranking
+            if candidate_id != recommended_candidate_id
+        ]
+    else:
+        normalized_ranking = [recommended_candidate_id] + normalized_ranking
+
+    return recommended_candidate_id, normalized_ranking
+
+
 def parse_llm_decision(
     message: Any,
     evidence_items: list[OckhamEvidenceItem],
     candidate_id_map: dict[str, str],
 ) -> OckhamRankingDecision:
-    """Parse the LLM answer and validate it against the expected candidate set.
-
-    Providers are often slightly inconsistent about wrappers and field names,
-    so this parser stays permissive while reading the payload and becomes
-    strict once the decision is converted back to the internal model ids.
-    """
+    """Parse the LLM answer and validate it against the expected candidate set."""
     text = read_message_text(message).strip()
 
     logger.info(
@@ -155,6 +190,17 @@ def parse_llm_decision(
 
     recommended_candidate_id = read_recommended_candidate_id(raw_payload, candidate_id_map)
     ranked_candidate_ids = read_ranked_candidate_ids(raw_payload, candidate_id_map)
+
+    recommended_candidate_id, ranked_candidate_ids = reconcile_ranking_only_output(
+        recommended_candidate_id,
+        ranked_candidate_ids,
+    )
+
+    if not ranked_candidate_ids:
+        raise ValueError("LLM ranking is empty.")
+
+    if recommended_candidate_id is None:
+        raise ValueError("LLM ranking does not define a valid rank 1 candidate.")
 
     candidate_decision = OckhamRankingDecision.model_validate(
         {

@@ -1,9 +1,10 @@
-from langchain_ollama import ChatOllama
 from loguru import logger
+from langchain_ollama import ChatOllama
 
 from src.config import settings
-from src.llm.prompts import build_ranking_prompt, build_ranking_repair_prompt
+from src.llm.prompts import build_ranking_prompt, build_repair_prompt
 from src.llm.text_utils import read_message_text, shorten_text
+
 
 LLM_PROVIDER_NAME = "ollama_json"
 
@@ -54,7 +55,7 @@ def invoke_ollama_ranking(
 def invoke_ollama_ranking_repair(
     prompt_payload: dict[str, str],
 ):
-    prompt = build_ranking_repair_prompt()
+    prompt = build_repair_prompt()
     llm = build_ollama_chat_model()
     chain = prompt | llm
 
