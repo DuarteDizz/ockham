@@ -1,0 +1,38 @@
+[project]
+name = "ockham-backend"
+version = "0.1.0"
+description = "Backend services for the Ockham ML experimentation and model ranking application"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "fastapi[standard]>=0.135.2",
+    "langchain>=0.3.27",
+    "langchain-ollama>=0.3.10",
+    "loguru>=0.7.3",
+    "ollama>=0.6.1",
+    "optuna>=4.5.0",
+    "optuna-integration[sklearn]>=4.5.0",
+    "pandas>=2.2,<3",
+    "pydantic-settings>=2.11.0",
+    "scikit-learn>=1.7,<1.8",
+    "sqlalchemy>=2.0.48",
+    "xgboost>=3.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.4",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["data", "storage", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
