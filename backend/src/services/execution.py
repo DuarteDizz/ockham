@@ -68,7 +68,7 @@ def run_experiment_job(experiment_id):
         if not selected_models:
             raise RuntimeError("Experiment has no selected models.")
 
-        if experiment.status == "cancel_requested":
+        if experiment.status in {"cancel_requested", "cancelled"}:
             mark_experiment_cancelled(session, experiment_id)
             return
 
@@ -221,7 +221,7 @@ def run_experiment_job(experiment_id):
         session.rollback()
         stop_active_run_workers(experiment_id)
         current = session.get(Experiment, experiment_id)
-        if current is not None and current.status == "cancel_requested":
+        if current is not None and current.status in {"cancel_requested", "cancelled"}:
             mark_experiment_cancelled(session, experiment_id)
         else:
             mark_experiment_failed(session, experiment_id, format_error_message(exc))

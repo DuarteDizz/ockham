@@ -57,10 +57,15 @@ def cleanup_worker_process(active_run, model_id):
 def terminate_worker_processes(active_run):
     """Stop every worker tracked under an active run.
 
-    We terminate first and then reuse the regular cleanup path so the code
-    keeps one exit routine for both normal completion and cancellation.
+    Cancellation needs to be deterministic from the API point of view. The
+    previous implementation only called ``terminate()`` and then joined for a
+    very short interval during cleanup. Some sklearn/Optuna workers can still
+    be alive after that grace period, which leaves the run looking active even
+    after the user clicks cancel.
     """
-    for process in list(active_run.worker_processes.values()):
+    processes = list(active_run.worker_processes.items())
+
+    for _, process in processes:
         if process is None:
             continue
 
@@ -69,6 +74,26 @@ def terminate_worker_processes(active_run):
                 process.terminate()
         except Exception:
             continue
+
+    for _, process in processes:
+        if process is None:
+            continue
+
+        try:
+            process.join(timeout=1.0)
+        except Exception:
+            pass
+
+    for _, process in processes:
+        if process is None:
+            continue
+
+        try:
+            if process.is_alive() and hasattr(process, "kill"):
+                process.kill()
+                process.join(timeout=0.5)
+        except Exception:
+            pass
 
     for model_id in list(active_run.worker_processes):
         cleanup_worker_process(active_run, model_id)

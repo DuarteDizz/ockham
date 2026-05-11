@@ -37,7 +37,7 @@ def is_cancel_requested(session, experiment):
         session.rollback()
         return False
 
-    return experiment.status == "cancel_requested"
+    return experiment.status in {"cancel_requested", "cancelled"}
 
 
 def mark_experiment_cancelled(session, experiment_id):
@@ -48,7 +48,21 @@ def mark_experiment_cancelled(session, experiment_id):
     for record in list_experiment_results(session, experiment_id):
         session.delete(record)
 
-    session.delete(experiment)
+    training_state = experiment.training_state or []
+    if training_state:
+        experiment.training_state = [
+            item
+            if item.get("status") == "done"
+            else {
+                **item,
+                "status": "cancelled",
+                "message": item.get("message") or "Experiment cancelled by the user.",
+            }
+            for item in training_state
+        ]
+
+    experiment.status = "cancelled"
+    experiment.progress = 100
     session.commit()
 
 
