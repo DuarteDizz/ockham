@@ -20,7 +20,6 @@ def get_models(problem_type: str) -> dict:
             name=model["name"],
             category=model["category"],
             problem_type=model["problem_type"],
-            search_backend=model.get("search_backend"),
         )
         for model in get_models_by_problem_type(problem_type)
     ]

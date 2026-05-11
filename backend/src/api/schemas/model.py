@@ -6,7 +6,6 @@ class ModelItem(BaseModel):
     name: str
     category: str
     problem_type: str
-    search_backend: str | None = None
 
 
 class ModelListResponse(BaseModel):

@@ -115,8 +115,6 @@ def experiment_summary_payload(
         "models": models,
         "best_model_by_ockham": recommended.model_name if recommended else None,
         "best_score_by_ockham": recommended.best_score if recommended else None,
-        "best_model": recommended.model_name if recommended else None,
-        "best_score": recommended.best_score if recommended else None,
         "best_model_by_score": score_winner.model_name if score_winner else None,
         "best_score_by_score": score_winner.best_score if score_winner else None,
         "primary_metric": primary_metric,

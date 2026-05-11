@@ -1,11 +1,8 @@
 """Result presenters used by the experiment dashboard and diagnostics views."""
 
-from src.ml.models.model_specs import serialize_search_params
 from src.ml.models.registry import get_model_config
-from src.ml.search.search_space import effective_n_trials as effective_n_iter
 from src.utils.core import clamp
 
-_DEFAULT_N_TRIALS = 10
 _DEFAULT_CAPABILITY_SUMMARY = (
     "Capability profile separates structural traits from measured execution evidence."
 )
@@ -18,41 +15,6 @@ _ANALYSIS_CONTEXT_KEYS = (
     "operational_context",
 )
 
-
-def build_optuna_payload(
-    *,
-    model_id,
-    best_params,
-    best_score,
-    total_search_time,
-    best_trial_number=None,
-    search_params=None,
-    requested_n_trials=_DEFAULT_N_TRIALS,
-):
-    """Build the lightweight Optuna payload used by the dashboard."""
-    model = get_model_config(model_id)
-    resolved_search_params = (
-        search_params if search_params is not None else model.get_search_params()
-    )
-    n_trials = effective_n_iter(resolved_search_params, requested_n_trials)
-
-    resolved_best_params = {} if best_params is None else dict(best_params)
-
-    return {
-        "search_backend": model.search_backend,
-        "best_value": best_score,
-        "best_params": resolved_best_params,
-        "duration_seconds": total_search_time,
-        "n_trials": n_trials,
-        "search_space": serialize_search_params(resolved_search_params),
-        "best_trial": {
-            "number": best_trial_number,
-            "value": best_score,
-            "params": resolved_best_params,
-        },
-    }
-
-
 def read_analysis_context(components):
     """Read the Ockham analysis blocks using a stable set of expected keys."""
     context = {}
@@ -63,11 +25,6 @@ def read_analysis_context(components):
         else:
             context[key] = dict(component)
     return context
-
-
-def read_record_analysis_context(record):
-    components = {} if record.ockham_components is None else record.ockham_components
-    return read_analysis_context(components)
 
 
 def read_result_item_analysis_context(item):
@@ -197,24 +154,19 @@ def build_capability_profiles(result_items):
 
 
 def build_result_payload(record):
-    """Build the common result payload shared by result and diagnostics routes."""
+    """Build the public result payload used by the ranking dashboard.
+
+    The public API intentionally keeps Optuna internals and duplicated Ockham
+    analysis blocks out of the response. Detailed evidence remains available
+    inside ``ockham_components`` and persisted Optuna payloads stay internal.
+    """
     best_params = {} if record.best_params is None else dict(record.best_params)
     metrics_mean = {} if record.metrics_mean is None else dict(record.metrics_mean)
     metrics_std = {} if record.metrics_std is None else dict(record.metrics_std)
     cv_fold_scores = {} if record.cv_fold_scores is None else dict(record.cv_fold_scores)
-
-    optuna_payload = record.optuna_payload
-    if optuna_payload is None:
-        optuna_payload = build_optuna_payload(
-            model_id=record.model_id,
-            best_params=best_params,
-            best_score=record.best_score,
-            total_search_time=record.total_search_time,
-        )
-
-    analysis_context = read_record_analysis_context(record)
     ockham_components = {} if record.ockham_components is None else dict(record.ockham_components)
-    payload = {
+
+    return {
         "model_id": record.model_id,
         "model_name": record.model_name,
         "category": record.category,
@@ -232,10 +184,7 @@ def build_result_payload(record):
         "is_ockham_recommended": record.is_ockham_recommended,
         "cv_fold_scores": cv_fold_scores,
         "ockham_components": ockham_components,
-        "optuna": optuna_payload,
     }
-    payload.update(analysis_context)
-    return payload
 
 
 def result_payload(record):
@@ -243,10 +192,20 @@ def result_payload(record):
 
 
 def diagnostics_payload(record, diagnostics):
-    payload = build_result_payload(record)
-    payload["experiment_id"] = record.experiment_id
-    payload.update(diagnostics)
-    return payload
+    """Build the focused diagnostics payload for one model."""
+    return {
+        "experiment_id": record.experiment_id,
+        "model_id": record.model_id,
+        "primary_metric": record.primary_metric,
+        "cv_fold_scores": diagnostics.get("cv_fold_scores") or {},
+        "confusion_matrix": diagnostics.get("confusion_matrix"),
+        "roc_curve": diagnostics.get("roc_curve"),
+        "learning_curve": diagnostics.get("learning_curve"),
+        "validation_curve": diagnostics.get("validation_curve"),
+        "actual_vs_predicted": diagnostics.get("actual_vs_predicted"),
+        "available_validation_params": diagnostics.get("available_validation_params") or [],
+        "selected_validation_param": diagnostics.get("selected_validation_param"),
+    }
 
 
 def result_payload_with_embedded(record):

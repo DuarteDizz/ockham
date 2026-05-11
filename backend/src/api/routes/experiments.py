@@ -96,6 +96,8 @@ def get_experiment(experiment_id: str, session: DB):
 def abort_experiment(experiment_id: str, session: DB):
     """Request cancellation for a running experiment."""
     experiment = get_or_404(session, Experiment, experiment_id, "Experiment not found.")
+    if experiment.status == "cancelled":
+        return experiment_payload(experiment)
     if experiment.status in {"done", "failed"}:
         raise HTTPException(409, "Experiment can no longer be cancelled.")
 
