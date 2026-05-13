@@ -10,7 +10,11 @@ export default function TopHeader({ datasetName, status, problemType, setProblem
     failed: { label: 'Run failed', className: 'bg-red-50/90 text-red-600' },
   }[status] || { label: status, className: 'bg-slate-100/80 text-slate-600' };
 
-  const title = activeView === 'datasets' || activeView === 'dataset-detail' ? 'Dataset Library' : 'Model Comparison';
+  const title = activeView === 'datasets' || activeView === 'dataset-detail'
+    ? 'Dataset Library'
+    : activeView === 'preprocessing'
+      ? 'Preprocessing Pipeline'
+      : 'Model Comparison';
 
   return (
     <header className="panel-glass sticky top-4 z-20 mb-6 rounded-[28px] border border-white/60 px-5 py-4">
