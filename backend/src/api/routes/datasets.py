@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import pandas as pd
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,6 +21,34 @@ router = APIRouter(prefix="/datasets", tags=["datasets"])
 DATASET_STORAGE_DIR = settings.dataset_storage_dir
 DB = Annotated[Session, Depends(get_session)]
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+
+
+def build_dataset_preview_payload(dataset_record: Dataset, row_limit: int) -> dict[str, Any]:
+    """Read a small, UI-safe preview from the persisted dataset file."""
+    dataset_file_path = Path(dataset_record.file_path)
+
+    if not dataset_file_path.exists():
+        raise HTTPException(404, "Dataset file not found.")
+
+    try:
+        preview_dataframe = pd.read_csv(dataset_file_path, nrows=row_limit)
+    except Exception as exc:
+        raise HTTPException(400, "Could not read dataset preview.") from exc
+
+    preview_dataframe = preview_dataframe.astype(object).where(
+        pd.notna(preview_dataframe),
+        None,
+    )
+
+    return {
+        "dataset_id": dataset_record.id,
+        "name": dataset_record.name,
+        "row_count": dataset_record.rows,
+        "column_count": dataset_record.columns,
+        "column_names": dataset_record.column_names or [],
+        "preview_row_count": int(len(preview_dataframe)),
+        "preview_rows": preview_dataframe.to_dict(orient="records"),
+    }
 
 
 @router.get("")
@@ -137,6 +165,17 @@ def upload_dataset(session: DB, file: UploadFile = File(...)) -> dict[str, Any]:
 def get_dataset(dataset_id: str, session: DB) -> dict[str, Any]:
     dataset_record = get_or_404(session, Dataset, dataset_id, "Dataset not found.")
     return dataset_payload(dataset_record)
+
+
+@router.get("/{dataset_id}/preview")
+def get_dataset_preview(
+    dataset_id: str,
+    session: DB,
+    limit: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """Return the first rows of a dataset for frontend table preview."""
+    dataset_record = get_or_404(session, Dataset, dataset_id, "Dataset not found.")
+    return build_dataset_preview_payload(dataset_record, row_limit=limit)
 
 
 @router.delete("/{dataset_id}")
