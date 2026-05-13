@@ -90,6 +90,7 @@ export function useWorkspaceController() {
   const [uploadedDatasets, setUploadedDatasets] = useState([]);
   const [experimentsForSelectedDataset, setExperimentsForSelectedDataset] = useState([]);
   const [datasetDetailId, setDatasetDetailId] = useState('');
+  const [preprocessingDatasetId, setPreprocessingDatasetId] = useState('');
 
   const [isUploading, setIsUploading] = useState(false);
   const [isHydratingDataset, setIsHydratingDataset] = useState(false);
@@ -960,6 +961,29 @@ export function useWorkspaceController() {
     setActiveView('datasets');
   }
 
+
+  async function openPreprocessing(nextDatasetId = datasetId || datasetDetailId) {
+    if (!nextDatasetId) {
+      setActiveView('datasets');
+      return;
+    }
+
+    setPreprocessingDatasetId(nextDatasetId);
+    setDatasetDetailId(nextDatasetId);
+    setActiveView('preprocessing');
+
+    if (nextDatasetId !== datasetId || !datasetColumns.length) {
+      await hydrateDatasetSelection(nextDatasetId, {
+        preferredProblemType: problemType,
+        switchView: false,
+        preserveTarget: true,
+      });
+      setActiveView('preprocessing');
+      setDatasetDetailId(nextDatasetId);
+      setPreprocessingDatasetId(nextDatasetId);
+    }
+  }
+
   async function openDatasetFromLibrary(nextDatasetId) {
     await hydrateDatasetSelection(nextDatasetId, {
       preferredProblemType: problemType,
@@ -990,8 +1014,10 @@ export function useWorkspaceController() {
     deleteExperiment,
     openDatasetDetail,
     closeDatasetDetail,
+    openPreprocessing,
     openDatasetFromLibrary,
     datasetDetailId,
+    preprocessingDatasetId,
     runComparison,
     cancelLiveTraining,
     resetExperiment,

@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronRight, Database, LayoutDashboard, Play, RotateCcw, Search, Sparkles, Target } from 'lucide-react';
+import { ChevronRight, Database, LayoutDashboard, Play, RotateCcw, Search, Sparkles, Target, Workflow } from 'lucide-react';
 import OckhamLogo from '@/shared/components/OckhamLogo';
 import ModelGlyph from '@/features/experiments/components/ModelGlyph';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'datasets', label: 'Datasets', icon: Database },
+  { key: 'preprocessing', label: 'Preprocessing', icon: Workflow },
 ];
 
 const GROUP_ACCENT = '#4361EE';
@@ -208,6 +209,7 @@ export default function Sidebar({
   datasetName,
   activeView,
   setActiveView,
+  openPreprocessing,
   error,
   isCancellingExperiment = false,
 }) {
@@ -292,7 +294,7 @@ export default function Sidebar({
             active={navActive === key}
             icon={icon}
             label={label}
-            onClick={() => setActiveView(key)}
+            onClick={() => (key === 'preprocessing' && openPreprocessing ? openPreprocessing() : setActiveView(key))}
           />
         ))}
       </div>

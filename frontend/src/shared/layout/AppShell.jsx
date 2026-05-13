@@ -5,6 +5,7 @@ import TopHeader from '@/features/experiments/components/TopHeader';
 import Dashboard from '@/features/experiments/pages/Dashboard';
 import DatasetsPage from '@/features/datasets/pages/DatasetsPage';
 import DatasetDetailPage from '@/features/datasets/pages/DatasetDetailPage';
+import PreprocessingPage from '@/features/preprocessing/pages/PreprocessingPage';
 
 function MobileNav() {
   const { activeView, setActiveView } = useOckhamStore();
@@ -12,6 +13,7 @@ function MobileNav() {
   const items = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'datasets', label: 'Datasets' },
+    { key: 'preprocessing', label: 'Preprocessing' },
   ];
 
   return (
@@ -38,6 +40,7 @@ export default function AppShell() {
     dashboard: <Dashboard />,
     datasets: <DatasetsPage />,
     'dataset-detail': <DatasetDetailPage />,
+    preprocessing: <PreprocessingPage />,
   };
 
   return (
@@ -59,6 +62,7 @@ export default function AppShell() {
         datasetName={store.datasetName}
         activeView={store.activeView}
         setActiveView={store.setActiveView}
+        openPreprocessing={store.openPreprocessing}
         error={store.error}
         isCancellingExperiment={store.isCancellingExperiment}
       />

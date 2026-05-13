@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Layers,
   Trash2,
+  Workflow,
 } from 'lucide-react';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
 import { MODEL_COLORS } from '@/features/ranking/support/ockhamData';
@@ -130,6 +131,14 @@ export default function DatasetDetailPage() {
               {dataset.rows ? <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><Layers className="w-3.5 h-3.5" /><span><b className="text-foreground">{dataset.rows.toLocaleString()}</b> rows</span></div> : null}
               {dataset.columns ? <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><BarChart2 className="w-3.5 h-3.5" /><span><b className="text-foreground">{dataset.columns}</b> columns</span></div> : null}
               {dataset.size_kb ? <div className="flex items-center gap-1.5 text-sm text-muted-foreground"><Tag className="w-3.5 h-3.5" /><span><b className="text-foreground">{dataset.size_kb}</b> KB</span></div> : null}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={() => store.openPreprocessing(dataset.id)} className="inline-flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:bg-primary/10">
+                <Workflow className="h-4 w-4" /> Design Preprocessing Pipeline
+              </button>
+              <button type="button" onClick={() => store.openDatasetFromLibrary(dataset.id)} className="inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/25 transition-all hover:opacity-90">
+                <FlaskConical className="h-4 w-4" /> Run Experiment
+              </button>
             </div>
           </div>
         </div>
