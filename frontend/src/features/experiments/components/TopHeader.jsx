@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import LlmSettingsPanel from './LlmSettingsPanel';
 
 export default function TopHeader({ datasetName, status, problemType, setProblemType, rankingMode, setRankingMode, activeView }) {
   const isProblemTypeLocked = status === 'processing';
@@ -10,11 +10,7 @@ export default function TopHeader({ datasetName, status, problemType, setProblem
     failed: { label: 'Run failed', className: 'bg-red-50/90 text-red-600' },
   }[status] || { label: status, className: 'bg-slate-100/80 text-slate-600' };
 
-  const title = activeView === 'datasets' || activeView === 'dataset-detail'
-    ? 'Dataset Library'
-    : activeView === 'preprocessing'
-      ? 'Preprocessing Pipeline'
-      : 'Model Comparison';
+  const title = activeView === 'datasets' || activeView === 'dataset-detail' ? 'Dataset Library' : 'Model Comparison';
 
   return (
     <header className="panel-glass sticky top-4 z-20 mb-6 rounded-[28px] border border-white/60 px-5 py-4">
@@ -60,6 +56,7 @@ export default function TopHeader({ datasetName, status, problemType, setProblem
             ))}
           </div>
           <span className={`rounded-full px-3 py-2 text-xs font-semibold ${statusMeta.className}`}>{statusMeta.label}</span>
+          <LlmSettingsPanel />
         </div>
       </div>
     </header>

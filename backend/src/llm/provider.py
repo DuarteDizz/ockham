@@ -1,40 +1,41 @@
 from loguru import logger
-from langchain_ollama import ChatOllama
 
-from src.config import settings
+from src.llm.model_factory import build_langchain_chat_model
 from src.llm.prompts import build_ranking_prompt, build_repair_prompt
+from src.llm.runtime_config import EffectiveLlmConfig, llm_runtime_config_store
 from src.llm.text_utils import read_message_text, shorten_text
 
 
-LLM_PROVIDER_NAME = "ollama_json"
+def get_llm_provider_name(config: EffectiveLlmConfig | None = None) -> str:
+    config = config or llm_runtime_config_store.get_effective_config()
+    return f"{config.provider}_json"
 
 
-def build_ollama_chat_model() -> ChatOllama:
-    return ChatOllama(
-        base_url=settings.ollama_base_url,
-        model=settings.ollama_model,
-        temperature=settings.ollama_temperature,
-        timeout=settings.ollama_timeout_seconds,
-        format="json",
-    )
+def build_ollama_chat_model():
+    """Backward-compatible helper used by older call sites.
+
+    The active provider can still be changed at runtime; the historical name is
+    kept so existing imports do not break.
+    """
+    return build_langchain_chat_model()
 
 
-def invoke_ollama_ranking(
-    prompt_payload: dict[str, str],
-):
+def invoke_llm_ranking(prompt_payload: dict[str, str]):
     prompt = build_ranking_prompt()
-    llm = build_ollama_chat_model()
+    config = llm_runtime_config_store.get_effective_config()
+    llm = build_langchain_chat_model(config)
     chain = prompt | llm
 
     logger.info(
-        "LLM provider invoke starting. provider={} mode=ranking model={} base_url={} timeout={} temperature={} payload_keys={} prompt_variables={}",
-        LLM_PROVIDER_NAME,
-        settings.ollama_model,
-        settings.ollama_base_url,
-        settings.ollama_timeout_seconds,
-        settings.ollama_temperature,
+        "LLM provider invoke starting. provider={} mode=ranking model={} base_url={} timeout={} temperature={} payload_keys={} prompt_variables={} has_api_key={}",
+        get_llm_provider_name(config),
+        config.model,
+        config.base_url,
+        config.timeout_seconds,
+        config.temperature,
         sorted(prompt_payload.keys()),
         sorted(prompt.input_variables),
+        config.has_api_key,
     )
 
     message = chain.invoke(prompt_payload)
@@ -42,8 +43,8 @@ def invoke_ollama_ranking(
 
     logger.info(
         "LLM provider invoke completed. provider={} mode=ranking model={} message_type={} content_chars={} preview={}",
-        LLM_PROVIDER_NAME,
-        settings.ollama_model,
+        get_llm_provider_name(config),
+        config.model,
         type(message).__name__,
         len(message_text),
         shorten_text(message_text),
@@ -52,22 +53,22 @@ def invoke_ollama_ranking(
     return message
 
 
-def invoke_ollama_ranking_repair(
-    prompt_payload: dict[str, str],
-):
+def invoke_llm_ranking_repair(prompt_payload: dict[str, str]):
     prompt = build_repair_prompt()
-    llm = build_ollama_chat_model()
+    config = llm_runtime_config_store.get_effective_config()
+    llm = build_langchain_chat_model(config)
     chain = prompt | llm
 
     logger.info(
-        "LLM provider invoke starting. provider={} mode=repair model={} base_url={} timeout={} temperature={} payload_keys={} prompt_variables={}",
-        LLM_PROVIDER_NAME,
-        settings.ollama_model,
-        settings.ollama_base_url,
-        settings.ollama_timeout_seconds,
-        settings.ollama_temperature,
+        "LLM provider invoke starting. provider={} mode=repair model={} base_url={} timeout={} temperature={} payload_keys={} prompt_variables={} has_api_key={}",
+        get_llm_provider_name(config),
+        config.model,
+        config.base_url,
+        config.timeout_seconds,
+        config.temperature,
         sorted(prompt_payload.keys()),
         sorted(prompt.input_variables),
+        config.has_api_key,
     )
 
     message = chain.invoke(prompt_payload)
@@ -75,11 +76,17 @@ def invoke_ollama_ranking_repair(
 
     logger.info(
         "LLM provider invoke completed. provider={} mode=repair model={} message_type={} content_chars={} preview={}",
-        LLM_PROVIDER_NAME,
-        settings.ollama_model,
+        get_llm_provider_name(config),
+        config.model,
         type(message).__name__,
         len(message_text),
         shorten_text(message_text),
     )
 
     return message
+
+
+# Compatibility aliases for the current ranking client.
+LLM_PROVIDER_NAME = "runtime_llm_json"
+invoke_ollama_ranking = invoke_llm_ranking
+invoke_ollama_ranking_repair = invoke_llm_ranking_repair

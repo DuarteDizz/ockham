@@ -5,10 +5,11 @@ from loguru import logger
 from src.config import settings
 from src.llm.payloads import build_prompt_payload
 from src.llm.provider import (
-    LLM_PROVIDER_NAME,
-    invoke_ollama_ranking,
-    invoke_ollama_ranking_repair,
+    get_llm_provider_name,
+    invoke_llm_ranking,
+    invoke_llm_ranking_repair,
 )
+from src.llm.runtime_config import llm_runtime_config_store
 from src.llm.parser import parse_llm_decision
 from src.llm.schemas import LlmRankingResult, LlmRankingStatus, OckhamRankingDecision
 from src.llm.text_utils import read_message_text, shorten_text
@@ -113,18 +114,19 @@ def attempt_repair_after_parse_failure(
         "validation_error": str(original_error),
     }
 
+    effective_config = llm_runtime_config_store.get_effective_config()
     logger.warning(
         "LLM output invalid but repairable. Attempting repair. model={} error={}",
-        settings.ollama_model,
+        effective_config.model,
         shorten_text(original_error),
     )
 
-    repair_message = invoke_ollama_ranking_repair(repair_payload)
+    repair_message = invoke_llm_ranking_repair(repair_payload)
     repaired_decision = parse_llm_decision(repair_message, evidence_items, candidate_id_map)
 
     logger.info(
         "LLM repair succeeded. model={} recommended_model_id={} ranked_count={}",
-        settings.ollama_model,
+        effective_config.model,
         repaired_decision.recommended_model_id,
         len(repaired_decision.ranked_model_ids),
     )
@@ -137,26 +139,29 @@ def rank_models_with_llm(evidence_items: list[OckhamEvidenceItem]) -> LlmRanking
     if not evidence_items:
         raise ValueError("evidence_items cannot be empty.")
 
+    effective_config = llm_runtime_config_store.get_effective_config()
     logger.info(
-        "LLM ranking request received. candidates={} enabled={} model={} base_url={} timeout={} retries={}",
+        "LLM ranking request received. candidates={} enabled={} provider={} model={} base_url={} timeout={} retries={} has_api_key={}",
         len(evidence_items),
         settings.enable_llm_ranking,
-        settings.ollama_model,
-        settings.ollama_base_url,
-        settings.ollama_timeout_seconds,
+        effective_config.provider,
+        effective_config.model,
+        effective_config.base_url,
+        effective_config.timeout_seconds,
         settings.ollama_max_retries,
+        effective_config.has_api_key,
     )
 
     if not settings.enable_llm_ranking:
         logger.warning(
             "LLM ranking is disabled in settings. model={} Using deterministic fallback.",
-            settings.ollama_model,
+            effective_config.model,
         )
         return build_fallback_ranking_result(evidence_items, status="disabled")
 
     try:
         prompt_payload, candidate_id_map = build_prompt_payload(evidence_items)
-        provider_message = invoke_ollama_ranking(prompt_payload)
+        provider_message = invoke_llm_ranking(prompt_payload)
 
         try:
             decision = parse_llm_decision(provider_message, evidence_items, candidate_id_map)
@@ -177,20 +182,20 @@ def rank_models_with_llm(evidence_items: list[OckhamEvidenceItem]) -> LlmRanking
         logger.exception(
             "LLM ranking invocation failed. Using deterministic fallback. status={} model={} base_url={} error={}",
             status,
-            settings.ollama_model,
-            settings.ollama_base_url,
+            effective_config.model,
+            effective_config.base_url,
             shorten_text(exc),
         )
         return build_fallback_ranking_result(evidence_items, status=status, error=str(exc))
 
     logger.info(
         "LLM ranking succeeded. provider={} recommended_model_id={} ranked_count={}",
-        LLM_PROVIDER_NAME,
+        get_llm_provider_name(),
         decision.recommended_model_id,
         len(decision.ranked_model_ids),
     )
     return LlmRankingResult(
-        provider=LLM_PROVIDER_NAME,
+        provider=get_llm_provider_name(),
         status="ok",
         error=None,
         decision=decision,
