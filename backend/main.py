@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes.datasets import router as datasets_router
 from src.api.routes.experiments import router as experiments_router
+from src.api.routes.llm_config import router as llm_config_router
+from src.api.routes.preprocessing import router as preprocessing_router
 from src.api.routes.models import router as models_router
 from src.config import configure_logging, settings
 from src.db import models  # noqa: F401 - importing models is enough to register metadata.
@@ -75,6 +77,8 @@ async def add_api_safety_headers(request: Request, call_next):
 app.include_router(datasets_router)
 app.include_router(models_router)
 app.include_router(experiments_router)
+app.include_router(llm_config_router)
+app.include_router(preprocessing_router)
 
 
 @app.get("/health", tags=["health"])
