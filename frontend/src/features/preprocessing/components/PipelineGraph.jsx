@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Database, GitBranch, Grip, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import { STEP_META, TYPE_META, getEffectiveTypeFromColumnPlan } from '@/features/preprocessing/support/preprocessingPlan';
+import { STEP_META, TYPE_META } from '@/features/preprocessing/support/preprocessingPlan';
 
 const CARD_WIDTH = 232;
 const CARD_HEIGHT = 126;
@@ -27,9 +27,6 @@ const STAGE_X = {
 const STEP_STAGE = {
   cast_numeric: 'preparation',
   cast_datetime: 'preparation',
-  cast_categorical: 'preparation',
-  cast_text: 'preparation',
-  cast_boolean: 'preparation',
   median_imputer: 'preparation',
   mean_imputer: 'preparation',
   most_frequent_imputer: 'preparation',
@@ -150,8 +147,8 @@ function GraphEdge({ edge, fromNode, toNode, isHighlighted }) {
 
   return (
     <g pointerEvents="none">
-      <path d={path} fill="none" stroke={edge.color} strokeWidth="9" strokeOpacity={isHighlighted ? 0.038 : 0.014} strokeLinecap="round" strokeLinejoin="round" />
-      <path d={path} fill="none" stroke={edge.color} strokeWidth={width} strokeOpacity={opacity} strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke={edge.color} strokeWidth="9" strokeOpacity={isHighlighted ? 0.038 : 0.014} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={edge.placeholder ? '7 9' : undefined} />
+      <path d={path} fill="none" stroke={edge.color} strokeWidth={width} strokeOpacity={opacity} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={edge.placeholder ? '7 9' : undefined} />
     </g>
   );
 }
@@ -224,11 +221,8 @@ function OutputNode({ node, columnCount, selected, onDragStart }) {
 }
 
 function ColumnNode({ node, item, columnProfile, selected, onSelect, onDragStart }) {
-  const effectiveType = getEffectiveTypeFromColumnPlan(item);
-  const originalType = item.inferred_type || columnProfile?.inferred_type || 'text';
-  const type = effectiveType || originalType;
+  const type = item.inferred_type || columnProfile?.inferred_type || 'text';
   const meta = TYPE_META[type] || TYPE_META.text;
-  const originalMeta = TYPE_META[originalType] || TYPE_META.text;
   const Icon = meta.icon;
   const dropped = item.steps.some((step) => step.operation === 'drop_column');
 
@@ -263,9 +257,6 @@ function ColumnNode({ node, item, columnProfile, selected, onSelect, onDragStart
         <button type="button" onClick={() => onSelect(item.column_name)} className="min-w-0 flex-1 text-left">
           <p className="truncate text-sm font-heading font-extrabold text-foreground">{item.column_name}</p>
           <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: `${meta.color}bb` }}>{meta.label}</p>
-          {type !== originalType ? (
-            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">Cast from <span style={{ color: originalMeta.color }}>{originalMeta.label}</span></p>
-          ) : null}
         </button>
         {dropped ? <span className="rounded-full bg-red-500/10 px-2 py-1 text-[10px] font-bold text-red-500">Drop</span> : null}
       </div>
@@ -500,6 +491,19 @@ function buildStageLayout(plan) {
       toSide: 'left',
       curveOffset: 0,
       laneOffset: 0,
+    });
+  } else {
+    edges.push({
+      id: 'edge::input::output::empty',
+      from: 'input',
+      to: 'output',
+      color: '#94A3B8',
+      columnName: null,
+      fromSide: 'right',
+      toSide: 'left',
+      curveOffset: 0,
+      laneOffset: 0,
+      placeholder: true,
     });
   }
 
@@ -815,8 +819,8 @@ export default function PipelineGraph({ datasetName, columns, plan, selectedColu
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
                 <GitBranch className="h-6 w-6" />
               </div>
-              <p className="text-sm font-heading font-bold text-foreground">No columns found for this dataset metadata.</p>
-              <p className="mt-1 max-w-sm text-xs text-muted-foreground">Open the dataset first so Ockham can hydrate column names, or connect the backend profiler endpoint.</p>
+              <p className="text-sm font-heading font-bold text-foreground">No preprocessing steps yet.</p>
+              <p className="mt-1 max-w-sm text-xs text-muted-foreground">Add columns manually from the table or generate an AI recommendation to populate this graph.</p>
             </div>
           ) : null}
         </div>

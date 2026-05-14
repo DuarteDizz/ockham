@@ -1,26 +1,15 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
-function getErrorMessageFromPayload(payload, fallbackMessage) {
-  if (!payload) return fallbackMessage;
-
-  try {
-    const parsed = JSON.parse(payload);
-    if (typeof parsed?.detail === 'string') return parsed.detail;
-    if (Array.isArray(parsed?.detail)) return parsed.detail.map((item) => item.msg || String(item)).join('; ');
-    if (typeof parsed?.message === 'string') return parsed.message;
-  } catch {
-    // Non-JSON error bodies are handled below.
-  }
-
-  return payload || fallbackMessage;
+export function buildApiUrl(path) {
+  return `${API_BASE_URL}${path}`;
 }
 
 export async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  const response = await fetch(buildApiUrl(path), options);
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(getErrorMessageFromPayload(text, `Request failed with status ${response.status}`));
+    throw new Error(text || `Request failed with status ${response.status}`);
   }
 
   const contentType = response.headers.get('content-type') || '';
