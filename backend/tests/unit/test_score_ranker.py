@@ -5,8 +5,8 @@ from src.ml.score_ranker import make_score_sort_key, rank_models_by_score
 def make_result(model_id: str, score: float, rmse: float = 0.0) -> ModelSearchResult:
     return ModelSearchResult(
         model_id=model_id,
-        model_label=model_id,
-        display_name=model_id,
+        model_name=model_id,
+        category="test",
         problem_type="regression",
         best_score=score,
         primary_metric="r2",
@@ -16,11 +16,7 @@ def make_result(model_id: str, score: float, rmse: float = 0.0) -> ModelSearchRe
             "neg_mean_absolute_error": -(rmse / 2 if rmse else 0.0),
         },
         metrics_std={"r2": 0.01},
-        search_params={},
         best_params={},
-        capability_profile={},
-        diagnostics={},
-        raw_search=None,
     )
 
 
