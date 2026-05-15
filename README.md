@@ -137,20 +137,22 @@ ockham/
 │  ├─ requirements.txt
 │  ├─ requirements-dev.txt
 │  ├─ Dockerfile
-│  ├─ data/
-│  ├─ storage/
-│  │  ├─ datasets/
-│  │  └─ logs/
 │  ├─ src/
+│  │  ├─ ai/
 │  │  ├─ api/
 │  │  ├─ config/
 │  │  ├─ db/
-│  │  ├─ llm/
-│  │  ├─ ml/
-│  │  │  ├─ models/
+│  │  ├─ experiments/
+│  │  │  ├─ application/
+│  │  │  ├─ diagnostics/
+│  │  │  ├─ persistence/
 │  │  │  ├─ ranking/
+│  │  │  └─ runtime/
+│  │  ├─ modeling/
+│  │  │  ├─ diagnostics/
+│  │  │  ├─ registry/
 │  │  │  └─ search/
-│  │  ├─ services/
+│  │  ├─ preprocessing/
 │  │  └─ utils/
 │  └─ tests/
 ├─ frontend/

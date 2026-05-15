@@ -4,16 +4,16 @@
 
 Ockham is built as a full-stack experimentation product for tabular machine learning.
 
-The architecture is intentionally opinionated around one goal: make model comparison readable as a product workflow, not just as a collection of training scripts. The repository separates HTTP delivery, experiment orchestration, classical ML execution, LLM-assisted ranking, persistence, and UI state so each concern remains visible in the codebase.
+The backend is organized by responsibility rather than by implementation technology. Dataset handling, agentic preprocessing, model search, experiment orchestration, AI provider access, persistence, and HTTP delivery each live in their own module boundary.
 
 ## High-level layout
 
 ```text
-frontend/  -> React interface for dataset upload, experiment setup, live training, and ranking views
-backend/   -> FastAPI API, Optuna-backed execution, ranking, diagnostics, and persistence
+frontend/  -> React interface for dataset upload, preprocessing, experiment setup, live training, and ranking views
+backend/   -> FastAPI API, agentic preprocessing, Optuna-backed model search, experiment orchestration, ranking, diagnostics, and persistence
 examples/  -> sample CSV datasets for local demo runs
 scripts/   -> lightweight local validation and smoke-test helpers
-docs/      -> active project documentation aligned to the current codebase
+docs/      -> project documentation aligned to the current codebase
 ```
 
 ## End-to-end flow
@@ -21,14 +21,15 @@ docs/      -> active project documentation aligned to the current codebase
 A typical run moves through these stages:
 
 1. The frontend uploads a CSV dataset to the backend.
-2. The backend stores the file under `backend/storage/datasets/` and registers dataset metadata in SQLite.
-3. The user chooses the target column, problem type, and candidate models.
-4. The backend creates an experiment record and starts background execution.
-5. The ML layer performs Optuna-backed search, cross-validation, scoring, and evidence assembly for each candidate model.
-6. The backend persists ranked results and exposes live experiment state to the frontend.
-7. The frontend polls the experiment endpoint until the dashboard is ready.
-8. Diagnostics are loaded from persisted artifacts when available and rebuilt lazily when the detail view needs missing charts.
-9. If LLM ranking is enabled, the LLM layer receives a compact evidence payload and returns a structured recommendation used by the Ockham ranking flow.
+2. The backend stores the file under the configured runtime storage path and registers dataset metadata in SQLite.
+3. The preprocessing module profiles the dataset deterministically and can build an agentic preprocessing plan.
+4. The user chooses the target column, problem type, and candidate models.
+5. The backend creates an experiment record and starts background execution.
+6. The modeling module performs Optuna-backed search, cross-validation, scoring, and diagnostics for each candidate model.
+7. The experiments module persists ranked results and exposes live experiment state to the frontend.
+8. The frontend polls the experiment endpoint until the dashboard is ready.
+9. Diagnostics are loaded from persisted artifacts when available and rebuilt lazily when the detail view needs missing charts.
+10. If AI ranking is enabled, the experiments ranking module uses the AI provider layer to rank candidates from compact structured evidence.
 
 ## Frontend responsibilities
 
@@ -39,6 +40,9 @@ Application shell, route composition, and top-level workflow entrypoints.
 
 ### `frontend/src/features/datasets/`
 Dataset upload, dataset listing, and dataset detail pages.
+
+### `frontend/src/features/preprocessing/`
+Dataset profiling, agentic preprocessing run state, operation registry consumption, and preprocessing-plan editing UI.
 
 ### `frontend/src/features/experiments/`
 Experiment setup, model selection, live training state, and experiment dashboard entrypoints.
@@ -54,120 +58,74 @@ Shared API clients, reusable UI components, layout primitives, and common fronte
 
 ## Backend responsibilities
 
-The backend uses a `backend/src/` package layout that keeps the training engine explicit while isolating the LLM path from the core ML flow.
+The backend uses a `backend/src/` package layout organized around product responsibilities.
 
 ### `backend/src/api/`
 FastAPI routes, request and response schemas, presenters, and dependency helpers.
 
-- `routes/` defines the public HTTP surface
-- `schemas/` defines response and request models
-- `presenters/` keeps API serialization logic out of the service layer
+- `routes/` defines the public HTTP surface.
+- `schemas/` defines response and request models.
+- `presenters/` keeps API serialization logic out of application services.
 
-### `backend/src/services/`
-Experiment-oriented orchestration services.
+### `backend/src/ai/`
+Infrastructure for local and API-backed AI model access.
 
-- `experiments.py` validates requests and creates experiment records
-- `execution.py` coordinates the full run lifecycle, ranking, and persistence
-- `runtime.py` manages active workers and cancellation hooks
-- `persistence.py` centralizes result reads and writes used by the API and execution flow
-- `diagnostics_backfill.py` supports rebuilding missing detail artifacts when needed
+This module owns provider factories, runtime configuration, text extraction helpers, and generic parser utilities. It does not know about experiments, ranking, preprocessing, or model-search domain objects.
 
-### `backend/src/ml/`
-Classical machine learning execution and ranking logic.
+### `backend/src/experiments/`
+Experiment lifecycle and result orchestration.
 
-Responsibilities include:
+- `application/` validates experiment requests and coordinates execution jobs.
+- `runtime/` manages active runs, worker processes, queues, and cancellation.
+- `persistence/` centralizes experiment-result reads and writes.
+- `ranking/` contains deterministic ranking, Ockham evidence assembly, and AI-assisted ranking.
+- `diagnostics/` contains background enrichment for diagnostics artifacts.
 
-- model registry and model specs
-- search-space definition
-- Optuna-backed search execution
-- dataset loading and cross-validation helpers
-- diagnostics generation
-- score-based ranking
-- Ockham evidence assembly from measured model outputs
+### `backend/src/modeling/`
+Classical machine-learning model definition, search, and diagnostics.
 
-This layer is the technical core of the product. It is intentionally separate from HTTP code and from the LLM path.
+- `registry/` contains model specifications and model registry helpers.
+- `search/` contains dataset loading, feature statistics, cross-validation, search spaces, and Optuna-backed search execution.
+- `diagnostics/` contains model diagnostics generation.
+- `contracts.py` defines model-search and ranking evidence contracts shared with experiments.
 
-### `backend/src/llm/`
-LLM-specific ranking integration.
+### `backend/src/preprocessing/`
+Agentic preprocessing and deterministic dataset profiling.
 
-Responsibilities include:
-
-- compact evidence payload construction
-- prompt assembly
-- LangChain + Ollama client integration
-- structured output parsing and validation
-- final LLM-driven recommendation for the Ockham ranking mode
-
-The LLM layer does not train models and does not inspect raw datasets directly. It operates on the prepared evidence bundle assembled from the experiment outputs.
+This module owns profilers, profile views, operation registry, specialist agents, skills, planning, and preprocessing-plan validation.
 
 ### `backend/src/db/`
 SQLite engine setup and ORM models.
 
-This layer persists:
-
-- dataset records
-- experiment records
-- experiment result rows
-- diagnostics artifacts and ranking outputs
+This layer persists dataset records, experiment records, experiment result rows, diagnostics artifacts, and ranking outputs.
 
 ### `backend/src/config/`
 Centralized runtime configuration, logging, and project paths.
 
-`settings.py` resolves the repository root, backend runtime folders, API host/port, and LLM configuration from the shared root `.env` file.
+### `backend/src/utils/`
+Small cross-cutting utilities that do not belong to one domain module.
+
+## Dependency direction
+
+Preferred dependency flow:
+
+```text
+api -> experiments/preprocessing/modeling -> db/config/ai/utils
+```
+
+Important boundaries:
+
+- `ai/` is infrastructure and should not import from `experiments/`, `modeling/`, or `preprocessing/`.
+- `modeling/` should not import from `api/` or `experiments/`.
+- `experiments/` may call `modeling/`, `ai/`, and `db/` because it orchestrates experiment lifecycle.
+- `preprocessing/` owns its own agentic flow and should expose plans through API/runtime services, not through the modeling layer.
+- `api/` should stay thin and delegate work to application modules.
 
 ## Persistence boundaries
 
 Ockham uses two local persistence styles on purpose.
 
-### `backend/data/`
-Structured local persistence.
+- SQLite stores metadata: datasets, experiments, result rows, progress state, ranking outputs, and diagnostics payloads.
+- Runtime storage stores uploaded datasets, generated artifacts, and local execution outputs.
 
-- `ockham.db` stores datasets, experiments, results, and related runtime metadata
-
-### `backend/storage/`
-Filesystem-backed runtime artifacts.
-
-- `datasets/` stores uploaded CSV files
-- `logs/` stores backend log files when file logging is enabled
-
-This split keeps the difference between structured application state and mutable runtime files obvious.
-
-## Ranking architecture
-
-Ockham exposes two ranking perspectives for the same experiment.
-
-### Score ranking
-A metric-first ordering based on the primary evaluation metric and standard CV outputs.
-
-### Ockham ranking
-A broader evidence-based ordering that combines predictive evidence with execution, structural, and operational signals. When enabled, the LLM layer receives that evidence as a structured payload and returns a recommendation that is then validated and surfaced back to the UI.
-
-That separation is central to the product story: the backend can answer both “what scored highest?” and “what looks like the most defensible overall choice?”
-
-## Diagnostics strategy
-
-The dashboard is designed so ranking comes first and expensive detail generation can remain secondary.
-
-- summary results are persisted during the experiment flow
-- embedded diagnostics are returned with ranked results when already available
-- detail artifacts such as validation curves are rebuilt lazily through the diagnostics endpoint when required
-
-This keeps the initial dashboard path focused on experiment completion without blocking on every possible chart artifact up front.
-
-## Why this structure matters
-
-The repository is meant to read like a product, not like a loose lab notebook.
-
-This structure makes it clear that:
-
-- the frontend expresses a guided experimentation workflow
-- the API surface stays small and user-facing
-- the ML engine is a dedicated subsystem, not scattered across route handlers
-- the LLM path is isolated and optional rather than mixed into the training core
-- local operability remains simple from the repository root
-
-## Related documents
-
-- [`SETUP.md`](SETUP.md)
-- [`DOCKER.md`](DOCKER.md)
-- [`API.md`](API.md)
+Local runtime folders should not be committed or shipped as source code.
