@@ -1,29 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Database, GitBranch, Grip, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import { TYPE_META, getOperationStage, getStepMeta } from '@/features/preprocessing/support/preprocessingPlan';
-
-const CARD_WIDTH = 232;
-const CARD_HEIGHT = 126;
-const OP_CARD_WIDTH = 214;
-const OP_CARD_HEIGHT = 102;
-const INPUT_WIDTH = 280;
-const OUTPUT_WIDTH = 250;
-const JUNCTION_SIZE = 12;
-const BUS_WIDTH = 10;
-const OP_STACK_GAP = 18;
-const MIN_ROW_HEIGHT = 176;
-const TOP_OFFSET = 132;
-const ROW_GAP = 34;
-
-const STAGE_X = {
-  input: 44,
-  column: 380,
-  preparation: 704,
-  transformation: 1032,
-  output: 1412,
-};
-
+import { STEP_META, TYPE_META } from '@/features/preprocessing/lib/typeMeta';
+import {
+  BUS_WIDTH,
+  CARD_HEIGHT,
+  CARD_WIDTH,
+  INPUT_WIDTH,
+  JUNCTION_SIZE,
+  MIN_ROW_HEIGHT,
+  OP_CARD_HEIGHT,
+  OP_CARD_WIDTH,
+  OP_STACK_GAP,
+  OUTPUT_WIDTH,
+  ROW_GAP,
+  STAGE_X,
+  STEP_STAGE,
+  TOP_OFFSET,
+} from './graphConfig';
 
 function getNodeSize(node) {
   if (node.kind === 'input') return { width: INPUT_WIDTH, height: 84 };
@@ -247,8 +241,8 @@ function ColumnNode({ node, item, columnProfile, selected, onSelect, onDragStart
   );
 }
 
-function OperationNode({ node, step, columnName, operationRegistry, selected, onSelect, onDragStart }) {
-  const stepMeta = getStepMeta(operationRegistry, step.operation);
+function OperationNode({ node, step, columnName, selected, onSelect, onDragStart }) {
+  const stepMeta = STEP_META[step.operation] || STEP_META.drop_column;
   const Icon = stepMeta.icon;
 
   return (
@@ -332,11 +326,10 @@ function BusNode({ node, selected }) {
   );
 }
 
-function groupStepsByStage(steps, operationRegistry) {
+function groupStepsByStage(steps) {
   return steps.reduce(
     (groups, step, stepIndex) => {
-      const operationStage = getOperationStage(operationRegistry, step.operation);
-      const stage = operationStage === 'casting' || operationStage === 'imputation' || operationStage === 'column_action' ? 'preparation' : 'transformation';
+      const stage = STEP_STAGE[step.operation] || 'transformation';
       groups[stage].push({ step, stepIndex });
       return groups;
     },
@@ -349,11 +342,11 @@ function stackTop(centerY, count) {
   return centerY - stackHeight / 2;
 }
 
-function computeRows(plan, operationRegistry) {
+function computeRows(plan) {
   let nextY = TOP_OFFSET;
 
   return plan.map((item, rowIndex) => {
-    const groups = groupStepsByStage(item.steps, operationRegistry);
+    const groups = groupStepsByStage(item.steps);
     const maxStack = Math.max(1, groups.preparation.length, groups.transformation.length);
     const rowHeight = Math.max(
       MIN_ROW_HEIGHT,
@@ -399,8 +392,8 @@ function addParallelEdges({ edges, from, targets, color, columnName, stageName }
   });
 }
 
-function buildStageLayout(plan, operationRegistry) {
-  const rows = computeRows(plan, operationRegistry);
+function buildStageLayout(plan) {
+  const rows = computeRows(plan);
   const nodes = [];
   const edges = [];
   const graphTop = rows.length ? rows[0].top : TOP_OFFSET;
@@ -655,12 +648,12 @@ function ZoomControls({ zoom, setZoom, resetLayout }) {
   );
 }
 
-export default function PipelineGraph({ datasetName, columns, plan, operationRegistry, selectedColumn, onSelectColumn }) {
+export default function PipelineGraph({ datasetName, columns, plan, selectedColumn, onSelectColumn }) {
   const dragRef = useRef(null);
   const [positions, setPositions] = useState({});
   const [zoom, setZoom] = useState(0.9);
 
-  const defaultGraph = useMemo(() => buildStageLayout(plan, operationRegistry), [plan, operationRegistry]);
+  const defaultGraph = useMemo(() => buildStageLayout(plan), [plan]);
   const createDefaultPositions = useCallback(() => {
     return Object.fromEntries(
       defaultGraph.nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
@@ -785,7 +778,6 @@ export default function PipelineGraph({ datasetName, columns, plan, operationReg
                   node={node}
                   step={node.step}
                   columnName={node.columnName}
-                  operationRegistry={operationRegistry}
                   selected={selectedColumn === node.columnName}
                   onSelect={onSelectColumn}
                   onDragStart={handleDragStart}
