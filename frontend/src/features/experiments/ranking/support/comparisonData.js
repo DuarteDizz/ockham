@@ -6,7 +6,7 @@ import {
   normalizeRelativeTime,
   shortenCapabilityLabel,
   toPercent,
-} from '@/features/ranking/support/chartConstants';
+} from '@/features/experiments/ranking/support/chartConstants';
 
 export function buildCapabilityProfile(best, allResults, problemType, rankingMode) {
   if (!best) return [];

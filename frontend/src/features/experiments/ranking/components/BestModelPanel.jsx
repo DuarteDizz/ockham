@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Info, Sparkles, Trophy, Zap } from 'lucide-react';
 
-import { MODEL_COLORS } from '@/features/ranking/support/ockhamData';
+import { MODEL_COLORS } from '@/features/experiments/ranking/support/ockhamData';
 import MetricsOverview from './MetricsOverview';
 
 export default function BestModelPanel({ results, rankingMode = 'ockham' }) {

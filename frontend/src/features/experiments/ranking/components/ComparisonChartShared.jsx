@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-import { CHART_COLORS } from '@/features/ranking/support/chartConstants';
+import { CHART_COLORS } from '@/features/experiments/ranking/support/chartConstants';
 
 export function Panel({ title, subtitle, icon: Icon, children, actions = null, className = '' }) {
   return (

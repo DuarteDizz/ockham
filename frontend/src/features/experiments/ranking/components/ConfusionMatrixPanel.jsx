@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 
-import { Placeholder } from '@/features/ranking/components/ComparisonChartShared';
-import { deriveConfusionStats } from '@/features/ranking/support/comparisonData';
-import { CHART_COLORS, getConfusionCellTone } from '@/features/ranking/support/chartConstants';
+import { Placeholder } from '@/features/experiments/ranking/components/ComparisonChartShared';
+import { deriveConfusionStats } from '@/features/experiments/ranking/support/comparisonData';
+import { CHART_COLORS, getConfusionCellTone } from '@/features/experiments/ranking/support/chartConstants';
 
 function ConfusionPill({ label, value, tone = 'neutral' }) {
   const tones = {

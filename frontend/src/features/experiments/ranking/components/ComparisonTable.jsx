@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MODEL_COLORS } from '@/features/ranking/support/ockhamData';
+import { MODEL_COLORS } from '@/features/experiments/ranking/support/ockhamData';
 import { Trophy } from 'lucide-react';
 
 export default function ComparisonTable({ results, rankingMode }) {

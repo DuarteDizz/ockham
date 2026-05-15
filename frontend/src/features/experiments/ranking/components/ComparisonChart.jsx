@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import { Activity, Binary, Radar as RadarIcon, Waves } from 'lucide-react';
 
-import { ConfusionMatrixPanel } from '@/features/ranking/components/ConfusionMatrixPanel';
+import { ConfusionMatrixPanel } from '@/features/experiments/ranking/components/ConfusionMatrixPanel';
 import {
   AggregatedPredictedSampleTooltip,
   ChartLegend,
@@ -31,7 +31,7 @@ import {
   Panel,
   Placeholder,
   RegressionScatterTooltip,
-} from '@/features/ranking/components/ComparisonChartShared';
+} from '@/features/experiments/ranking/components/ComparisonChartShared';
 import {
   buildAggregatedPredictedSampleData,
   buildCapabilityProfile,
@@ -41,12 +41,12 @@ import {
   buildPredictedScatterData,
   buildRocData,
   buildValidationData,
-} from '@/features/ranking/support/comparisonData';
+} from '@/features/experiments/ranking/support/comparisonData';
 import {
   CHART_COLORS,
   compactModelName,
   shortenAxisLabel,
-} from '@/features/ranking/support/chartConstants';
+} from '@/features/experiments/ranking/support/chartConstants';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
 
 export default function ComparisonChart({ results, problemType, rankingMode = 'ockham' }) {
