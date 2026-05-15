@@ -8,16 +8,15 @@ from typing import Any
 from .state import PreprocessingState
 
 STEPS = {
-    "column_role": ("1/10 · Column Role Agent", "Classifying column roles."),
-    "casting": ("2/10 · Casting Agent", "Checking type conversions."),
-    "feature_drop": ("3/10 · Feature Drop Agent", "Finding risky columns."),
-    "missing_values": ("4/10 · Missing Values Agent", "Planning imputation."),
-    "datetime_features": ("5/10 · Datetime Agent", "Planning datetime features."),
-    "encoding": ("6/10 · Encoding Agent", "Planning categorical encoding."),
-    "scaling": ("7/10 · Scaling Agent", "Planning numeric scaling."),
-    "plan_merger": ("8/10 · Plan Merger", "Merging agent decisions."),
-    "plan_judge": ("9/10 · Plan Judge", "Reviewing the preprocessing plan."),
-    "plan_explainer": ("10/10 · Plan Explainer", "Preparing user-facing explanations."),
+    "column_role": ("1/9 · Column Role Agent", "Classifying column roles."),
+    "casting": ("2/9 · Casting Agent", "Checking type conversions."),
+    "feature_drop": ("3/9 · Feature Drop Agent", "Finding risky columns."),
+    "missing_values": ("4/9 · Missing Values Agent", "Planning missing-value handling."),
+    "datetime_features": ("5/9 · Datetime Agent", "Planning datetime features."),
+    "encoding": ("6/9 · Encoding Agent", "Planning categorical encoding."),
+    "scaling": ("7/9 · Scaling Agent", "Planning numeric scaling."),
+    "plan_merger": ("8/9 · Plan Merger", "Merging agent decisions."),
+    "plan_judge": ("9/9 · Plan Judge", "Reviewing the preprocessing plan."),
 }
 
 _SENTINEL = object()
@@ -51,7 +50,7 @@ class PreprocessingPipelineSession:
             return f"Recommended dropping {count} column(s)."
         if node_id == "missing_values" and self.state.missing_value_decisions:
             count = len(self.state.missing_value_decisions.get("decisions", []) or [])
-            return f"Recommended imputation for {count} column(s)."
+            return f"Recommended missing-value handling for {count} column(s)."
         if node_id == "datetime_features" and self.state.datetime_decisions:
             count = len(self.state.datetime_decisions.get("decisions", []) or [])
             return f"Recommended datetime steps for {count} column operation(s)."
@@ -70,8 +69,6 @@ class PreprocessingPipelineSession:
                 "revise": "The preprocessing plan needs another pass.",
                 "reject": "The preprocessing plan was rejected.",
             }.get(self.state.judge_decision)
-        if node_id == "plan_explainer" and self.state.explanation:
-            return "Generated plan explanation."
         return None
 
     async def iter_events_async(self) -> AsyncIterator[dict[str, Any]]:
@@ -140,7 +137,6 @@ class PreprocessingPipelineSession:
         yield {
             "kind": "final",
             "plan": self.state.final_plan or self.state.merged_plan,
-            "explanation": self.state.explanation,
             "validation_result": self.state.validation_result,
             "raw_result": result,
         }

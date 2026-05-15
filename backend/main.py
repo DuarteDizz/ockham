@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.routes.datasets import router as datasets_router
 from src.api.routes.experiments import router as experiments_router
 from src.api.routes.llm_config import router as llm_config_router
+from src.api.routes.preprocessing import registry_router as preprocessing_registry_router
 from src.api.routes.preprocessing import router as preprocessing_router
 from src.api.routes.models import router as models_router
 from src.config import configure_logging, settings
@@ -79,6 +80,7 @@ app.include_router(models_router)
 app.include_router(experiments_router)
 app.include_router(llm_config_router)
 app.include_router(preprocessing_router)
+app.include_router(preprocessing_registry_router)
 
 
 @app.get("/health", tags=["health"])

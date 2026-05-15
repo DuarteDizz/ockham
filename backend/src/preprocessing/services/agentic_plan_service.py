@@ -68,7 +68,6 @@ class AgenticPreprocessingPlanService:
             "status": "agentic_draft",
             "plan": final_plan,
             "validation_result": session.state.validation_result,
-            "explanation": session.state.explanation,
             "events": events,
         }
 

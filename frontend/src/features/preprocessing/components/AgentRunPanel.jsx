@@ -2,16 +2,15 @@ import React, { useMemo } from 'react';
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react';
 
 const AGENT_STEPS = [
-  { node: 'column_role', label: '1/10 · Column Role Agent', detail: 'Classifying column roles.' },
-  { node: 'casting', label: '2/10 · Casting Agent', detail: 'Checking type conversions.' },
-  { node: 'feature_drop', label: '3/10 · Feature Drop Agent', detail: 'Finding risky columns.' },
-  { node: 'missing_values', label: '4/10 · Missing Values Agent', detail: 'Planning imputation.' },
-  { node: 'datetime_features', label: '5/10 · Datetime Agent', detail: 'Planning datetime features.' },
-  { node: 'encoding', label: '6/10 · Encoding Agent', detail: 'Planning categorical encoding.' },
-  { node: 'scaling', label: '7/10 · Scaling Agent', detail: 'Planning numeric scaling.' },
-  { node: 'plan_merger', label: '8/10 · Plan Merger', detail: 'Merging agent decisions.' },
-  { node: 'plan_judge', label: '9/10 · Plan Judge', detail: 'Reviewing the preprocessing plan.' },
-  { node: 'plan_explainer', label: '10/10 · Plan Explainer', detail: 'Preparing user-facing explanations.' },
+  { node: 'column_role', label: '1/9 · Column Role Agent', detail: 'Classifying column roles.' },
+  { node: 'casting', label: '2/9 · Casting Agent', detail: 'Checking type conversions.' },
+  { node: 'feature_drop', label: '3/9 · Feature Drop Agent', detail: 'Finding risky columns.' },
+  { node: 'missing_values', label: '4/9 · Missing Values Agent', detail: 'Planning missing-value handling.' },
+  { node: 'datetime_features', label: '5/9 · Datetime Agent', detail: 'Planning datetime features.' },
+  { node: 'encoding', label: '6/9 · Encoding Agent', detail: 'Planning categorical encoding.' },
+  { node: 'scaling', label: '7/9 · Scaling Agent', detail: 'Planning numeric scaling.' },
+  { node: 'plan_merger', label: '8/9 · Plan Merger', detail: 'Merging agent decisions.' },
+  { node: 'plan_judge', label: '9/9 · Plan Judge', detail: 'Reviewing the preprocessing plan.' },
 ];
 
 function deriveStepState(step, events) {
@@ -36,7 +35,7 @@ function StatusIcon({ state }) {
   return <Circle className="h-4 w-4 text-muted-foreground/40" />;
 }
 
-export default function AgentRunPanel({ events = [], isRunning = false, explanation = null }) {
+export default function AgentRunPanel({ events = [], isRunning = false }) {
   const visible = isRunning || events.length > 0;
 
   const enrichedSteps = useMemo(
@@ -55,7 +54,6 @@ export default function AgentRunPanel({ events = [], isRunning = false, explanat
 
   if (!visible) return null;
 
-  const finalEvent = events.find((event) => event.kind === 'final');
   const errorEvent = events.find((event) => event.kind === 'error');
   const completedCount = enrichedSteps.filter((step) => step.state === 'completed').length;
 
@@ -103,12 +101,6 @@ export default function AgentRunPanel({ events = [], isRunning = false, explanat
           </div>
         ))}
       </div>
-
-      {finalEvent && explanation?.summary ? (
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/75 px-3 py-2 text-xs text-muted-foreground">
-          <span className="font-bold text-foreground">Summary:</span> {explanation.summary}
-        </div>
-      ) : null}
     </section>
   );
 }

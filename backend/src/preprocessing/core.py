@@ -10,7 +10,6 @@ from .agents.datetime_features import DatetimeFeatureAgent
 from .agents.encoding import EncodingAgent
 from .agents.feature_drop import FeatureDropAgent
 from .agents.missing_values import MissingValueAgent
-from .agents.plan_explainer import PlanExplainerAgent
 from .agents.plan_judge import PlanJudgeAgent
 from .agents.plan_merger import PlanMergerAgent
 from .agents.scaling import ScalingAgent
@@ -121,16 +120,6 @@ def build_preprocessing_graph_pipeline(state: PreprocessingState | None = None):
         "plan_judge",
     )
 
-    builder.add_node(
-        PlanExplainerAgent(
-            name="plan_explainer",
-            model=model,
-            state=state,
-            description="Explains the approved preprocessing plan.",
-        ),
-        "plan_explainer",
-    )
-
     builder.add_edge("column_role", "casting")
     builder.add_edge("casting", "feature_drop")
     builder.add_edge("feature_drop", "missing_values")
@@ -144,12 +133,6 @@ def build_preprocessing_graph_pipeline(state: PreprocessingState | None = None):
         "plan_judge",
         "plan_judge",
         condition=lambda _: state.judge_decision == "revise" and state.judge_retries < max_retries,
-    )
-
-    builder.add_edge(
-        "plan_judge",
-        "plan_explainer",
-        condition=lambda _: state.judge_decision == "approve",
     )
 
     builder.set_entry_point("column_role")
