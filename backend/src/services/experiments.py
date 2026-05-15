@@ -7,8 +7,8 @@ from sqlalchemy import select
 
 from src.api.dependencies import get_or_404
 from src.db.models import Dataset, Experiment
-from src.ml.models.model_specs import PROBLEM_TYPES
-from src.ml.models.registry import get_model_config, get_models_by_problem_type
+from src.modeling.registry.model_specs import PROBLEM_TYPES
+from src.modeling.registry.model_registry import get_model_config, get_models_by_problem_type
 
 
 def build_training_state(selected_models):
