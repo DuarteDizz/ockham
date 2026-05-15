@@ -8,7 +8,7 @@ from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 
-from src.ml.models.model_specs import (
+from src.modeling.registry.model_specs import (
     PROBLEM_TYPES,
     ModelConfig,
     choices,

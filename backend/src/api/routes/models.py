@@ -3,8 +3,8 @@
 from fastapi import APIRouter, HTTPException
 
 from src.api.schemas.model import ModelItem, ModelListResponse
-from src.ml.models.model_specs import PROBLEM_TYPES
-from src.ml.models.registry import get_models_by_problem_type
+from src.modeling.registry.model_specs import PROBLEM_TYPES
+from src.modeling.registry.model_registry import get_models_by_problem_type
 
 router = APIRouter(prefix="/models", tags=["models"])
 
