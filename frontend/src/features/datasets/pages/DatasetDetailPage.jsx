@@ -13,7 +13,7 @@ import {
   Workflow,
 } from 'lucide-react';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
-import { MODEL_COLORS } from '@/features/ranking/support/ockhamData';
+import { MODEL_COLORS } from '@/features/experiments/ranking/support/ockhamData';
 
 const FILE_TYPE_COLORS = { csv: '#10B981', xlsx: '#4361EE', json: '#F59E0B' };
 

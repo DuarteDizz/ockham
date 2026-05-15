@@ -3,9 +3,9 @@ import { AlertTriangle, RotateCcw } from 'lucide-react';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
 import EmptyState from '@/shared/components/EmptyState';
 import ProcessingState from '@/features/experiments/components/ProcessingState';
-import BestModelPanel from '@/features/ranking/components/BestModelPanel';
-import ComparisonChart from '@/features/ranking/components/ComparisonChart';
-import ComparisonTable from '@/features/ranking/components/ComparisonTable';
+import BestModelPanel from '@/features/experiments/ranking/components/BestModelPanel';
+import ComparisonChart from '@/features/experiments/ranking/components/ComparisonChart';
+import ComparisonTable from '@/features/experiments/ranking/components/ComparisonTable';
 import OckhamLogo from '@/shared/components/OckhamLogo';
 
 function OckhamFallbackBanner({ rankingMeta }) {
