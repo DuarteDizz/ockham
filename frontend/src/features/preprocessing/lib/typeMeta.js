@@ -1,0 +1,40 @@
+import { CalendarDays, Droplets, FileText, Hash, Scale, Tags, ToggleLeft, Trash2, Type, Wand2 } from 'lucide-react';
+
+export const TYPE_META = {
+  numeric: { label: 'Numeric', color: '#4361EE', icon: Hash },
+  numeric_like_text: { label: 'Numeric-like', color: '#4361EE', icon: Hash },
+  categorical: { label: 'Categorical', color: '#F59E0B', icon: Type },
+  text: { label: 'Text', color: '#F59E0B', icon: Type },
+  datetime: { label: 'Datetime', color: '#7C3AED', icon: CalendarDays },
+  datetime_like_text: { label: 'Datetime-like', color: '#7C3AED', icon: CalendarDays },
+  boolean: { label: 'Boolean', color: '#10B981', icon: ToggleLeft },
+  free_text: { label: 'Free text', color: '#EF4444', icon: FileText },
+  identifier: { label: 'Identifier', color: '#EF4444', icon: Trash2 },
+  empty: { label: 'Empty', color: '#94A3B8', icon: Trash2 },
+};
+
+export const STEP_META = {
+  drop_column: { label: 'Drop column', color: '#EF4444', icon: Trash2, group: 'drop' },
+  cast_numeric: { label: 'Cast numeric', color: '#4361EE', icon: Hash, group: 'cast' },
+  cast_datetime: { label: 'Cast datetime', color: '#7C3AED', icon: CalendarDays, group: 'cast' },
+  cast_categorical: { label: 'Cast categorical', color: '#F59E0B', icon: Type, group: 'cast' },
+  cast_text: { label: 'Cast text', color: '#64748B', icon: FileText, group: 'cast' },
+  cast_boolean: { label: 'Cast boolean', color: '#10B981', icon: ToggleLeft, group: 'cast' },
+  median_imputer: { label: 'Median imputer', color: '#06B6D4', icon: Droplets, group: 'imputation' },
+  mean_imputer: { label: 'Mean imputer', color: '#06B6D4', icon: Droplets, group: 'imputation' },
+  most_frequent_imputer: { label: 'Mode imputer', color: '#06B6D4', icon: Droplets, group: 'imputation' },
+  constant_imputer: { label: 'Constant imputer', color: '#06B6D4', icon: Droplets, group: 'imputation' },
+  drop_rows_missing: { label: 'Drop missing rows', color: '#06B6D4', icon: Trash2, group: 'imputation' },
+  standard_scaler: { label: 'Standard scaler', color: '#4361EE', icon: Scale, group: 'scaling' },
+  robust_scaler: { label: 'Robust scaler', color: '#4361EE', icon: Scale, group: 'scaling' },
+  minmax_scaler: { label: 'MinMax scaler', color: '#4361EE', icon: Scale, group: 'scaling' },
+  maxabs_scaler: { label: 'MaxAbs scaler', color: '#4361EE', icon: Scale, group: 'scaling' },
+  one_hot_encoder: { label: 'One-hot encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  ordinal_encoder: { label: 'Ordinal encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  label_encoder: { label: 'Label encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  frequency_encoder: { label: 'Frequency encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  target_encoder: { label: 'Target encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  hashing_encoder: { label: 'Hashing encoder', color: '#F59E0B', icon: Tags, group: 'encoding' },
+  extract_datetime_features: { label: 'Datetime features', color: '#7C3AED', icon: Wand2, group: 'feature_engineering' },
+  drop_original_datetime: { label: 'Drop original date', color: '#EF4444', icon: Trash2, group: 'drop' },
+};
