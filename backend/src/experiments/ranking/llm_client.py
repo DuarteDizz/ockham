@@ -13,7 +13,7 @@ from src.ai.runtime_config import llm_runtime_config_store
 from src.experiments.ranking.llm_parser import parse_llm_decision
 from src.experiments.ranking.schemas import LlmRankingResult, LlmRankingStatus, OckhamRankingDecision
 from src.ai.text_utils import read_message_text, shorten_text
-from src.ml.contracts import OckhamEvidenceItem
+from src.modeling.contracts import OckhamEvidenceItem
 
 
 FALLBACK_PROVIDER_NAME = "deterministic_score_fallback"

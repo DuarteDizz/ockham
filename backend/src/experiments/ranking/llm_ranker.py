@@ -1,5 +1,5 @@
 from src.experiments.ranking.llm_client import rank_models_with_llm
-from src.ml.contracts import OckhamEvidenceItem
+from src.modeling.contracts import OckhamEvidenceItem
 
 WINNER_SUMMARY = (
     "Recommended in Ockham mode because its overall tradeoff between predictive evidence, "

@@ -7,7 +7,7 @@ from loguru import logger
 
 from src.experiments.ranking.schemas import OckhamRankingDecision
 from src.ai.text_utils import read_message_text, shorten_text
-from src.ml.contracts import OckhamEvidenceItem
+from src.modeling.contracts import OckhamEvidenceItem
 
 
 RECOMMENDED_MODEL_FIELD_NAMES = (

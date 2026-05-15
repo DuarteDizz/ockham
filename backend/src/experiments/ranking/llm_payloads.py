@@ -7,7 +7,7 @@ import random
 from loguru import logger
 
 from src.ai.text_utils import shorten_text
-from src.ml.contracts import OckhamEvidenceItem
+from src.modeling.contracts import OckhamEvidenceItem
 
 
 def shuffle_candidates_without_score_leakage(

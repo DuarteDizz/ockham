@@ -2,7 +2,7 @@
 
 from math import isnan
 
-from src.ml.contracts import (
+from src.modeling.contracts import (
     ExecutionProfile,
     FeatureUsageContext,
     OckhamEvidenceItem,

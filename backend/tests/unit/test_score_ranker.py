@@ -1,12 +1,12 @@
-from src.ml.contracts import ModelSearchResult
-from src.ml.score_ranker import make_score_sort_key, rank_models_by_score
+from src.modeling.contracts import ModelSearchResult
+from src.experiments.ranking.deterministic_ranker import make_score_sort_key, rank_models_by_score
 
 
 def make_result(model_id: str, score: float, rmse: float = 0.0) -> ModelSearchResult:
     return ModelSearchResult(
         model_id=model_id,
         model_name=model_id,
-        category="test",
+        category="linear",
         problem_type="regression",
         best_score=score,
         primary_metric="r2",
