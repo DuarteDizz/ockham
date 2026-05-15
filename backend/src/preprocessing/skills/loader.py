@@ -3,8 +3,9 @@
 Skills are versioned knowledge bundles stored under ``preprocessing/skills``.
 They are loaded explicitly by each agent, not selected dynamically by the LLM.
 This keeps the flow stable with local Ollama models while preserving the
-benefits of skills: operational knowledge, contracts, examples and rubrics live
-next to each specialist agent capability instead of being scattered across code.
+benefits of skills: operational knowledge, contracts and profiler-field rubrics
+live next to each specialist agent capability instead of being scattered across
+code.
 """
 
 from __future__ import annotations
@@ -13,6 +14,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+DEFAULT_REFERENCE_ORDER = (
+    "references/profiler_fields.md",
+    "references/decision_rubric.md",
+    "references/output_contract.md",
+)
+
 
 @dataclass(frozen=True)
 class LoadedSkill:
@@ -20,6 +27,7 @@ class LoadedSkill:
 
     name: str
     description: str
+    version: str
     path: Path
     body: str
     references: dict[str, str]
@@ -27,11 +35,17 @@ class LoadedSkill:
     def render_system_prompt(self) -> str:
         """Return the complete specialist system prompt for an agent."""
         reference_blocks = []
-        for relative_path, content in sorted(self.references.items()):
+        for relative_path, content in self.references.items():
             reference_blocks.append(f"\n## Reference: {relative_path}\n\n{content.strip()}")
 
         references = "\n".join(reference_blocks)
         return f"""
+# Loaded Ockham skill
+
+- name: {self.name}
+- version: {self.version}
+- description: {self.description}
+
 {self.body.strip()}
 
 {references}
@@ -40,7 +54,8 @@ class LoadedSkill:
 
 - You are a JSON-only preprocessing specialist inside Ockham.
 - You are not a chat assistant and you are not writing an analysis report.
-- Use only the profile view and registry supplied in the task payload.
+- Use only the deterministic profile view and registry supplied in the task payload.
+- Do not infer statistics from raw data. The profiler has already computed the evidence.
 - Do not invent, translate, rename, pluralize or omit column names.
 - Do not suggest modeling, EDA, charts, code snippets, train/test split, metrics, hyperparameter tuning or feature engineering outside the listed Ockham operations.
 - Return exactly one decision for every column in output_contract.expected_columns.
@@ -82,7 +97,7 @@ class SkillLoader:
         self.skills_root = skills_root or Path(__file__).resolve().parent
 
     @lru_cache(maxsize=32)
-    def load(self, skill_name: str) -> LoadedSkill:
+    def load(self, skill_name: str, reference_order: tuple[str, ...] = DEFAULT_REFERENCE_ORDER) -> LoadedSkill:
         skill_path = self.skills_root / skill_name
         skill_file = skill_path / "SKILL.md"
 
@@ -91,20 +106,24 @@ class SkillLoader:
 
         raw = skill_file.read_text(encoding="utf-8")
         metadata, body = _split_frontmatter(raw)
-        references = self._load_references(skill_path)
+        references = self._load_references(skill_path, reference_order=reference_order)
 
         return LoadedSkill(
             name=metadata.get("name", skill_name),
             description=metadata.get("description", ""),
+            version=metadata.get("version", "0.1.0"),
             path=skill_path,
             body=body,
             references=references,
         )
 
-    def _load_references(self, skill_path: Path) -> dict[str, str]:
+    def _load_references(self, skill_path: Path, *, reference_order: tuple[str, ...]) -> dict[str, str]:
+        """Load only the reference files that are part of the runtime prompt."""
         references: dict[str, str] = {}
-        for path in sorted((skill_path / "references").rglob("*.md")) if (skill_path / "references").exists() else []:
-            references[str(path.relative_to(skill_path))] = path.read_text(encoding="utf-8")
+        for relative_path in reference_order:
+            path = skill_path / relative_path
+            if path.exists():
+                references[relative_path] = path.read_text(encoding="utf-8")
         return references
 
 

@@ -75,6 +75,7 @@ class SkillDrivenSpecialistAgent(MultiAgentBase):
             "skill": {
                 "name": self.skill.name,
                 "description": self.skill.description,
+                "version": self.skill.version,
                 "stage": self.stage,
             },
             "task": f"Use the {self.skill.name} skill to produce one specialist decision for each listed column.",
@@ -353,7 +354,12 @@ Output shape example only. Use real column names from the valid list, not placeh
         expected_columns: list[str],
     ) -> dict[str, Any]:
         return {
-            "skill": {"name": self.skill.name, "description": self.skill.description, "stage": "column_role"},
+            "skill": {
+                "name": self.skill.name,
+                "description": self.skill.description,
+                "version": self.skill.version,
+                "stage": "column_role",
+            },
             "task": "Classify every listed column. This is not feature selection.",
             "target_column": self.state.target_column,
             "output_contract": {
