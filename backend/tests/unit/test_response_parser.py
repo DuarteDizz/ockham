@@ -1,6 +1,6 @@
 import unittest
 
-from src.llm.parser import parse_llm_decision
+from src.experiments.ranking.llm_parser import parse_llm_decision
 from src.ml.contracts import (
     ExecutionProfile,
     FeatureUsageContext,

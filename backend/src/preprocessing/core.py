@@ -2,7 +2,7 @@ from loguru import logger
 from strands.multiagent import GraphBuilder
 
 from src.config.settings import settings
-from src.llm.model_factory import build_strands_model
+from src.ai.providers.factory import build_strands_model
 
 from .agents.casting import CastingAgent
 from .agents.column_role import ColumnRoleAgent
@@ -120,6 +120,7 @@ def build_preprocessing_graph_pipeline(state: PreprocessingState | None = None):
         "plan_judge",
     )
 
+
     builder.add_edge("column_role", "casting")
     builder.add_edge("casting", "feature_drop")
     builder.add_edge("feature_drop", "missing_values")
@@ -134,6 +135,7 @@ def build_preprocessing_graph_pipeline(state: PreprocessingState | None = None):
         "plan_judge",
         condition=lambda _: state.judge_decision == "revise" and state.judge_retries < max_retries,
     )
+
 
     builder.set_entry_point("column_role")
     builder.set_execution_timeout(600)
