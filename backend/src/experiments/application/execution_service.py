@@ -1,4 +1,4 @@
-"""Experiment execution orchestration."""
+"""Application service for experiment execution orchestration."""
 
 import threading
 from queue import Empty
@@ -11,9 +11,9 @@ from src.experiments.ranking.llm_ranker import apply_ockham_ranking
 from src.modeling.contracts import ModelSearchResult
 from src.experiments.ranking.ockham_evidence import build_ockham_evidence
 from src.experiments.ranking.deterministic_ranker import rank_models_by_score
-from src.services.diagnostics_backfill import backfill_ranked_diagnostics
-from src.services.model_workers import start_model_process
-from src.services.persistence import (
+from src.experiments.diagnostics.diagnostics_backfill import backfill_ranked_diagnostics
+from src.experiments.runtime.model_workers import start_model_process
+from src.experiments.persistence.experiment_repository import (
     format_error_message,
     is_cancel_requested,
     list_experiment_results,
@@ -21,7 +21,7 @@ from src.services.persistence import (
     mark_experiment_failed,
     store_ranked_results,
 )
-from src.services.runtime import (
+from src.experiments.runtime.active_runs import (
     SPAWN_CONTEXT,
     ActiveExperimentRun,
     cleanup_worker_process,

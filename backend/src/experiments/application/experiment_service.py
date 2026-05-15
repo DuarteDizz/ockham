@@ -1,4 +1,4 @@
-"""Experiment service: validate requests and create experiment records."""
+"""Application service for experiment validation and record creation."""
 
 import uuid
 
