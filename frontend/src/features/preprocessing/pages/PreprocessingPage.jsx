@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
 import { fetchDatasetPreview } from '@/shared/api/datasets';
-import { createAgenticPreprocessingPlan, streamAgenticPreprocessingPlan } from '@/shared/api/preprocessing';
+import { fetchDatasetProfile, fetchPreprocessingOperationRegistry, streamAgenticPreprocessingPlan } from '@/shared/api/preprocessing';
 import PipelineGraph from '@/features/preprocessing/components/PipelineGraph';
 import ColumnTable from '@/features/preprocessing/components/ColumnTable';
 import ColumnStatsPanel from '@/features/preprocessing/components/ColumnStatsPanel';
@@ -22,8 +22,10 @@ import DatasetPreviewTable from '@/features/preprocessing/components/DatasetPrev
 import TransformPanel from '@/features/preprocessing/components/TransformPanel';
 import AgentRunPanel from '@/features/preprocessing/components/AgentRunPanel';
 import {
+  EMPTY_OPERATION_REGISTRY,
   buildColumnProfilesFromDataset,
   buildManualColumnPlan,
+  normalizeOperationRegistryPayload,
   normalizePreprocessingPlanColumns,
 } from '@/features/preprocessing/support/preprocessingPlan';
 
@@ -89,14 +91,22 @@ export default function PreprocessingPage() {
     return store.uploadedDatasets.find((item) => item.id === id) || null;
   }, [store.datasetId, store.datasetDetailId, store.preprocessingDatasetId, store.uploadedDatasets]);
 
-  const columns = useMemo(() => buildColumnProfilesFromDataset(dataset, store.datasetColumns), [dataset, store.datasetColumns]);
+  const [profileState, setProfileState] = useState({ isLoading: false, error: '', data: null });
+  const [operationRegistryState, setOperationRegistryState] = useState({
+    isLoading: false,
+    error: '',
+    data: EMPTY_OPERATION_REGISTRY,
+  });
+  const columns = useMemo(
+    () => buildColumnProfilesFromDataset(dataset, store.datasetColumns, profileState.data),
+    [dataset, store.datasetColumns, profileState.data],
+  );
   const [view, setView] = useState('graph');
   const [plan, setPlan] = useState([]);
   const [planSource, setPlanSource] = useState('empty');
   const [selectedColumn, setSelectedColumn] = useState('');
   const [status, setStatus] = useState('Empty');
   const [validationResult, setValidationResult] = useState(null);
-  const [planExplanation, setPlanExplanation] = useState(null);
   const [agentEvents, setAgentEvents] = useState([]);
   const [isGeneratingAgenticPlan, setIsGeneratingAgenticPlan] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -108,6 +118,63 @@ export default function PreprocessingPage() {
     rowCount: 0,
   });
 
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+    setOperationRegistryState({ isLoading: true, error: '', data: EMPTY_OPERATION_REGISTRY });
+
+    fetchPreprocessingOperationRegistry()
+      .then((response) => {
+        if (!isCurrentRequest) return;
+        setOperationRegistryState({
+          isLoading: false,
+          error: '',
+          data: normalizeOperationRegistryPayload(response || {}),
+        });
+      })
+      .catch((error) => {
+        if (!isCurrentRequest) return;
+        setOperationRegistryState({
+          isLoading: false,
+          error: error?.message || 'Could not load preprocessing operation registry.',
+          data: EMPTY_OPERATION_REGISTRY,
+        });
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (!dataset?.id) {
+      setProfileState({ isLoading: false, error: '', data: null });
+      return undefined;
+    }
+
+    let isCurrentRequest = true;
+    setProfileState({ isLoading: true, error: '', data: null });
+
+    fetchDatasetProfile(dataset.id)
+      .then((response) => {
+        if (!isCurrentRequest) return;
+        setProfileState({ isLoading: false, error: '', data: response || null });
+      })
+      .catch((error) => {
+        if (!isCurrentRequest) return;
+        setProfileState({
+          isLoading: false,
+          error: error?.message || 'Could not load deterministic column profile.',
+          data: null,
+        });
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [dataset?.id]);
+
   useEffect(() => {
     if (!dataset?.id) {
       setPlan([]);
@@ -115,7 +182,6 @@ export default function PreprocessingPage() {
       setSelectedColumn('');
       setStatus('Empty');
       setValidationResult(null);
-      setPlanExplanation(null);
       setAgentEvents([]);
       return;
     }
@@ -125,7 +191,6 @@ export default function PreprocessingPage() {
     setSelectedColumn('');
     setStatus('Empty');
     setValidationResult(null);
-    setPlanExplanation(null);
     setAgentEvents([]);
     setErrorMessage('');
   }, [dataset?.id, store.targetColumn]);
@@ -207,7 +272,6 @@ export default function PreprocessingPage() {
     setErrorMessage('');
     setAgentEvents([]);
     setValidationResult(null);
-    setPlanExplanation(null);
 
     try {
       const finalEvent = await streamAgenticPreprocessingPlan(dataset.id, {
@@ -224,7 +288,6 @@ export default function PreprocessingPage() {
       setPlanSource('agentic');
       setStatus('Agentic draft');
       setValidationResult(finalEvent?.validation_result || null);
-      setPlanExplanation(finalEvent?.explanation || null);
       setSelectedColumn((current) => current && nextPlan.some((item) => item.column_name === current)
         ? current
         : nextPlan[0]?.column_name || '');
@@ -262,7 +325,6 @@ export default function PreprocessingPage() {
     setSelectedColumn('');
     setStatus('Empty');
     setValidationResult(null);
-    setPlanExplanation(null);
     setAgentEvents([]);
     setErrorMessage('');
   };
@@ -273,7 +335,7 @@ export default function PreprocessingPage() {
       setErrorMessage('Add columns manually or generate an AI recommendation before running the pipeline.');
       return;
     }
-    setStatus('Executed locally');
+    setStatus('Ready to apply');
   };
 
   const operationCount = plan.reduce((acc, item) => acc + item.steps.length, 0);
@@ -325,15 +387,26 @@ export default function PreprocessingPage() {
         </div>
       ) : null}
 
+      {operationRegistryState.error ? (
+        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-semibold text-red-600">
+          {operationRegistryState.error} Manual preprocessing operations are unavailable until the registry is loaded.
+        </div>
+      ) : null}
+
+      {profileState.error ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm font-semibold text-amber-700">
+          {profileState.error} The UI will show column names without synthetic statistics.
+        </div>
+      ) : null}
+
       <AgentRunPanel
         events={agentEvents}
         isRunning={isGeneratingAgenticPlan}
-        explanation={planExplanation}
       />
 
       <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-4">
         <MetricCard label="Dataset" value={dataset.name} icon={GitBranch} />
-        <MetricCard label="Pipeline status" value={status} icon={CheckCircle2} />
+        <MetricCard label="Pipeline status" value={operationRegistryState.isLoading ? 'Loading operation registry...' : profileState.isLoading ? 'Profiling columns...' : status} icon={CheckCircle2} />
         <MetricCard label="Mode" value={planModeLabel} icon={Sparkles} />
         <MetricCard label="Operations" value={`${operationCount} · ${droppedCount} dropped`} icon={Workflow} />
       </div>
@@ -364,6 +437,7 @@ export default function PreprocessingPage() {
             <ColumnTable
               columns={columns}
               plan={plan}
+              operationRegistry={operationRegistryState.data}
               selectedColumn={selectedColumn}
               targetColumn={store.targetColumn}
               onSelectColumn={setSelectedColumn}
@@ -381,7 +455,7 @@ export default function PreprocessingPage() {
               onSelectColumn={setSelectedColumn}
             />
           ) : (
-            <PipelineGraph datasetName={dataset.name} columns={columns} plan={plan} selectedColumn={selectedColumn} onSelectColumn={setSelectedColumn} />
+            <PipelineGraph datasetName={dataset.name} columns={columns} plan={plan} operationRegistry={operationRegistryState.data} selectedColumn={selectedColumn} onSelectColumn={setSelectedColumn} />
           )}
         </div>
 
@@ -389,9 +463,9 @@ export default function PreprocessingPage() {
           <TransformPanel
             column={selectedProfile}
             columnPlan={selectedPlan}
-            columns={columns}
             targetColumn={store.targetColumn}
             plan={plan}
+            operationRegistry={operationRegistryState.data}
             onPlanChange={markUserEdited}
           />
           <ColumnStatsPanel column={selectedProfile} />

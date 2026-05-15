@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { PlusCircle, Search, SlidersHorizontal, Target } from 'lucide-react';
-import { STEP_META, TYPE_META } from '@/features/preprocessing/support/preprocessingPlan';
+import { TYPE_META, getStepMeta } from '@/features/preprocessing/support/preprocessingPlan';
 
 function formatPct(value) {
   if (value === null || value === undefined) return '—';
@@ -12,6 +12,7 @@ export default function ColumnTable({
   plan,
   selectedColumn,
   targetColumn,
+  operationRegistry,
   onSelectColumn,
   onAddColumnToPipeline,
 }) {
@@ -95,7 +96,7 @@ export default function ColumnTable({
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-1.5">
                       {(item?.steps || []).slice(0, 3).map((step) => {
-                        const stepMeta = STEP_META[step.operation] || STEP_META.drop_column;
+                        const stepMeta = getStepMeta(operationRegistry, step.operation);
                         return <span key={step.id} className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ background: `${stepMeta.color}12`, color: stepMeta.color }}>{stepMeta.label}</span>;
                       })}
                       {!item?.steps?.length ? <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><SlidersHorizontal className="h-3 w-3" /> none</span> : null}

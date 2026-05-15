@@ -1,70 +1,34 @@
 """Official preprocessing operation registry for Ockham.
 
-This module is intentionally small: it defines the operations the application
-knows how to represent/apply and exposes helpers used by structural validators,
-plan merging and skill-driven agents. Specialist reasoning lives in
-``preprocessing/skills``; prompt construction no longer belongs here.
+The backend owns the canonical operation registry.  The same records are used
+by validators, specialist agents and the frontend registry endpoint, avoiding a
+second handwritten catalog in the UI.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from .operation_specs import OPERATION_CONFIGS, OPERATION_GROUPS, OperationConfig
 
-PREPROCESSING_OPERATION_REGISTRY: dict[str, dict[str, Any]] = {
-    "casting": {
-        "label": "Column casting",
-        "operations": {
-            "cast_numeric": "Cast numeric",
-            "cast_datetime": "Cast datetime",
-            "cast_categorical": "Cast categorical",
-            "cast_text": "Cast text",
-            "cast_boolean": "Cast boolean",
-        },
-    },
-    "imputation": {
-        "label": "Missing values",
-        "operations": {
-            "mean_imputer": "Mean imputer",
-            "median_imputer": "Median imputer",
-            "most_frequent_imputer": "Most frequent imputer",
-            "constant_imputer": "Constant imputer",
-        },
-    },
-    "scaling": {
-        "label": "Feature scaling",
-        "operations": {
-            "standard_scaler": "Standard scaler",
-            "robust_scaler": "Robust scaler",
-            "minmax_scaler": "MinMax scaler",
-            "maxabs_scaler": "MaxAbs scaler",
-        },
-    },
-    "encoding": {
-        "label": "Categorical encoding",
-        "operations": {
-            "one_hot_encoder": "One-hot encoder",
-            "ordinal_encoder": "Ordinal encoder",
-            "label_encoder": "Label encoder",
-            "frequency_encoder": "Frequency encoder",
-            "target_encoder": "Target encoder",
-            "hashing_encoder": "Hashing encoder",
-        },
-    },
-    "datetime": {
-        "label": "Datetime features",
-        "operations": {
-            "extract_datetime_features": "Extract datetime features",
-            "drop_original_datetime": "Drop original datetime",
-        },
-    },
-    "column_action": {
-        "label": "Column actions",
-        "operations": {
-            "drop_column": "Drop column",
-        },
-    },
+OPERATION_REGISTRY_VERSION = "0.2.0"
+
+OPERATION_CONFIGS_BY_ID: dict[str, OperationConfig] = {
+    operation.id: operation for operation in OPERATION_CONFIGS
 }
+OPERATION_GROUPS_BY_ID = {group.id: group for group in OPERATION_GROUPS}
+
+PREPROCESSING_OPERATION_REGISTRY: dict[str, dict[str, Any]] = {}
+for group in OPERATION_GROUPS:
+    stage_operations = {
+        operation.id: operation.label
+        for operation in sorted(OPERATION_CONFIGS, key=lambda item: item.order)
+        if operation.stage == group.stage
+    }
+    PREPROCESSING_OPERATION_REGISTRY[group.stage] = {
+        "label": group.label,
+        "operations": stage_operations,
+    }
 
 AGENT_STAGE_REGISTRY: dict[str, str] = {
     "CastingAgent": "casting",
@@ -85,11 +49,9 @@ STAGE_ORDER: dict[str, int] = {
 }
 
 CAST_EFFECTIVE_TYPES: dict[str, str] = {
-    "cast_numeric": "numeric",
-    "cast_datetime": "datetime",
-    "cast_boolean": "boolean",
-    "cast_categorical": "categorical",
-    "cast_text": "text",
+    operation.id: operation.cast_target_type
+    for operation in OPERATION_CONFIGS
+    if operation.cast_target_type
 }
 
 ALLOWED_COLUMN_ROLES = {"feature", "target", "drop", "review"}
@@ -109,6 +71,13 @@ ALLOWED_SEMANTIC_TYPES = {
 }
 
 
+def get_operation_config(operation: str) -> OperationConfig:
+    config = OPERATION_CONFIGS_BY_ID.get(operation)
+    if config is None:
+        raise ValueError(f"Unknown preprocessing operation: {operation}")
+    return config
+
+
 def get_operations_by_stage(stage: str) -> dict[str, str]:
     return dict(PREPROCESSING_OPERATION_REGISTRY.get(stage, {}).get("operations", {}))
 
@@ -118,17 +87,12 @@ def get_allowed_operation_names(stage: str) -> list[str]:
 
 
 def get_all_operation_names() -> set[str]:
-    operations: set[str] = set()
-    for stage_config in PREPROCESSING_OPERATION_REGISTRY.values():
-        operations.update(stage_config.get("operations", {}).keys())
-    return operations
+    return set(OPERATION_CONFIGS_BY_ID)
 
 
 def get_operation_stage(operation: str) -> str | None:
-    for stage, stage_config in PREPROCESSING_OPERATION_REGISTRY.items():
-        if operation in stage_config.get("operations", {}):
-            return stage
-    return None
+    config = OPERATION_CONFIGS_BY_ID.get(operation)
+    return config.stage if config else None
 
 
 def is_known_operation(operation: str | None) -> bool:
@@ -153,6 +117,62 @@ def format_allowed_operations(stage: str) -> str:
     if not operations:
         return "- None"
     return "\n".join(f"- {operation}: {label}" for operation, label in operations.items())
+
+
+def get_cast_targets() -> list[dict[str, str | None]]:
+    targets = [{"label": "Keep inferred type", "operation": "", "target_type": None}]
+    targets.extend(
+        {
+            "label": operation.label.removeprefix("Cast ").capitalize(),
+            "operation": operation.id,
+            "target_type": operation.cast_target_type,
+        }
+        for operation in sorted(OPERATION_CONFIGS, key=lambda item: item.order)
+        if operation.cast_target_type
+    )
+    return targets
+
+
+def get_compatible_operations_by_type() -> dict[str, list[str]]:
+    compatible: dict[str, list[str]] = {}
+    for operation in sorted(OPERATION_CONFIGS, key=lambda item: item.order):
+        if not operation.manual_enabled:
+            continue
+        for effective_type in operation.compatible_types:
+            compatible.setdefault(effective_type, []).append(operation.id)
+    return compatible
+
+
+def get_operation_registry_payload() -> dict[str, Any]:
+    groups = []
+    for group in sorted(OPERATION_GROUPS, key=lambda item: item.order):
+        operations = [
+            operation.id
+            for operation in sorted(OPERATION_CONFIGS, key=lambda item: item.order)
+            if operation.group_id == group.id and operation.manual_enabled
+        ]
+        group_payload = group.to_dict()
+        group_payload["operations"] = operations
+        groups.append(group_payload)
+
+    return {
+        "version": OPERATION_REGISTRY_VERSION,
+        "stages": [
+            {"id": stage, "order": order}
+            for stage, order in sorted(STAGE_ORDER.items(), key=lambda item: item[1])
+        ],
+        "groups": groups,
+        "operations": [
+            operation.to_dict()
+            for operation in sorted(OPERATION_CONFIGS, key=lambda item: item.order)
+            if operation.manual_enabled
+        ],
+        "agent_stage_registry": dict(AGENT_STAGE_REGISTRY),
+        "cast_operations": list(CAST_EFFECTIVE_TYPES),
+        "cast_targets": get_cast_targets(),
+        "cast_target_type_by_operation": dict(CAST_EFFECTIVE_TYPES),
+        "compatible_operations_by_type": get_compatible_operations_by_type(),
+    }
 
 
 def normalize_string_list(value: object) -> list[str]:

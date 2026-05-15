@@ -1,14 +1,11 @@
 import { buildApiUrl, request } from './client';
 
-export function createAgenticPreprocessingPlan(datasetId, payload = {}) {
-  return request(`/datasets/${datasetId}/preprocessing/agent-plan`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      problem_type: payload.problemType || 'classification',
-      target_column: payload.targetColumn || null,
-    }),
-  });
+export function fetchDatasetProfile(datasetId) {
+  return request(`/datasets/${datasetId}/profile`);
+}
+
+export function fetchPreprocessingOperationRegistry() {
+  return request('/preprocessing/operations');
 }
 
 export async function streamAgenticPreprocessingPlan(datasetId, payload = {}, handlers = {}) {
