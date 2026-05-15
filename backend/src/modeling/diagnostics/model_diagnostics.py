@@ -10,10 +10,10 @@ from sklearn.model_selection import (
     validation_curve,
 )
 
-from src.ml.models.registry import build_estimator
-from src.ml.search.cross_validation import build_cv
-from src.ml.search.dataset_loader import load_numeric_dataset, prepare_model_context
-from src.ml.search.search_space import (
+from src.modeling.registry.model_registry import build_estimator
+from src.modeling.search.cross_validation import build_cv
+from src.modeling.search.dataset_loader import load_numeric_dataset, prepare_model_context
+from src.modeling.search.search_space import (
     get_available_validation_params,
     resolve_matching_search_space,
 )

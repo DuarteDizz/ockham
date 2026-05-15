@@ -1,6 +1,6 @@
 """Result presenters used by the experiment dashboard and diagnostics views."""
 
-from src.ml.models.registry import get_model_config
+from src.modeling.registry.model_registry import get_model_config
 from src.utils.core import clamp
 
 _DEFAULT_CAPABILITY_SUMMARY = (
@@ -39,7 +39,7 @@ def read_result_item_analysis_context(item):
 
 def embedded_diagnostics_payload(record, best_params):
     """Expose the embedded diagnostics block used by the result cards."""
-    from src.ml.search.search_space import get_available_validation_params
+    from src.modeling.search.search_space import get_available_validation_params
 
     search_params = get_model_config(record.model_id).get_search_params()
     available_validation_params = get_available_validation_params(search_params, best_params)

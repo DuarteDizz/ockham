@@ -7,8 +7,8 @@ import optuna
 from sklearn.base import clone
 from sklearn.model_selection import cross_validate
 
-from src.ml.models.model_specs import serialize_search_params
-from src.ml.search.search_space import iter_search_spaces
+from src.modeling.registry.model_specs import serialize_search_params
+from src.modeling.search.search_space import iter_search_spaces
 
 
 def summarize_cv_result(cv_result, scoring):

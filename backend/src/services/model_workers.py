@@ -1,6 +1,6 @@
 """Worker-process helpers for per-model experiment execution."""
 
-from src.ml.search.search_service import run_model_search
+from src.modeling.search.search_service import run_model_search
 from src.services.persistence import format_error_message
 from src.services.runtime import SPAWN_CONTEXT
 

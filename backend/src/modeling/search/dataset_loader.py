@@ -2,9 +2,9 @@
 
 import pandas as pd
 
-from src.ml.models.model_specs import PROBLEM_TYPES
-from src.ml.models.registry import get_model_config
-from src.ml.search.cross_validation import build_scoring
+from src.modeling.registry.model_specs import PROBLEM_TYPES
+from src.modeling.registry.model_registry import get_model_config
+from src.modeling.search.cross_validation import build_scoring
 
 
 def load_numeric_dataset(dataset_path, target_column, problem_type):

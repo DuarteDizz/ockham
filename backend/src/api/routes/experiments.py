@@ -23,9 +23,9 @@ from src.api.schemas.result import (
     ExperimentResultsResponse,
 )
 from src.db.models import Dataset, Experiment, ExperimentResult
-from src.ml.models.registry import get_model_config
-from src.ml.search.diagnostics import build_model_diagnostics
-from src.ml.search.search_space import get_available_validation_params
+from src.modeling.registry.model_registry import get_model_config
+from src.modeling.diagnostics.model_diagnostics import build_model_diagnostics
+from src.modeling.search.search_space import get_available_validation_params
 from src.services.execution import run_experiment_job
 from src.services.experiments import (
     build_training_state,

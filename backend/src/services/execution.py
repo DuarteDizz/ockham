@@ -8,9 +8,9 @@ from loguru import logger
 from src.db.database import SessionLocal
 from src.db.models import Dataset, Experiment
 from src.experiments.ranking.llm_ranker import apply_ockham_ranking
-from src.ml.contracts import ModelSearchResult
-from src.ml.ranking.ockham_evidence import build_ockham_evidence
-from src.ml.score_ranker import rank_models_by_score
+from src.modeling.contracts import ModelSearchResult
+from src.experiments.ranking.ockham_evidence import build_ockham_evidence
+from src.experiments.ranking.deterministic_ranker import rank_models_by_score
 from src.services.diagnostics_backfill import backfill_ranked_diagnostics
 from src.services.model_workers import start_model_process
 from src.services.persistence import (

@@ -1,16 +1,16 @@
 """Model search orchestration kept separate from diagnostics helpers."""
 
-from src.ml.contracts import ModelSearchResult
-from src.ml.models.registry import build_estimator
-from src.ml.search.cross_validation import build_cv
-from src.ml.search.dataset_loader import load_numeric_dataset, prepare_model_context
-from src.ml.search.diagnostics import collect_visual_diagnostics
-from src.ml.search.feature_stats import (
+from src.modeling.contracts import ModelSearchResult
+from src.modeling.registry.model_registry import build_estimator
+from src.modeling.search.cross_validation import build_cv
+from src.modeling.search.dataset_loader import load_numeric_dataset, prepare_model_context
+from src.modeling.diagnostics.model_diagnostics import collect_visual_diagnostics
+from src.modeling.search.feature_stats import (
     extract_feature_stats,
     measure_inference_time_per_1000_rows,
 )
-from src.ml.search.optuna_search import run_optuna_cv_search
-from src.ml.search.search_space import effective_n_trials
+from src.modeling.search.optuna_search import run_optuna_cv_search
+from src.modeling.search.search_space import effective_n_trials
 
 
 def run_model_search(
