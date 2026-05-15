@@ -248,44 +248,38 @@ class ProfileViewBuilder:
         ]
 
     def for_scaling(self) -> list[dict[str, Any]]:
+        """Build a compact scaling view with only decision-critical evidence.
+
+        Scaling is especially sensitive to local-model context bloat. Keep the
+        view focused on eligibility, spread, outliers, sparsity and boundedness.
+        Do not include redundant raw counts or fields handled by earlier stages.
+        """
         return [
             _copy(
                 context,
                 [
                     "column_name",
                     "row_count",
-                    "raw_dtype",
-                    "inferred_type",
                     "effective_type",
                     "semantic_type",
                     "recommended_role",
                     "is_target",
-                    "missing_count",
-                    "missing_ratio",
                     "unique_count",
                     "unique_ratio",
                     "mean",
                     "median",
                     "std",
-                    "variance",
                     "min",
                     "max",
-                    "p01",
-                    "p05",
                     "p25",
-                    "p50",
                     "p75",
                     "p95",
                     "p99",
                     "skewness",
                     "kurtosis",
-                    "outlier_count_iqr",
                     "outlier_ratio_iqr",
-                    "outlier_count_zscore",
                     "outlier_ratio_zscore",
                     "zero_ratio",
-                    "negative_ratio",
-                    "sparsity_score",
                     "is_sparse",
                     "is_bounded_0_1",
                     "is_bounded_0_100",
