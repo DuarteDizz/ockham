@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import useOckhamStore from '@/features/workspace/state/WorkspaceContext';
 import { fetchDatasetPreview } from '@/shared/api/datasets';
-import { createAgenticPreprocessingPlan, streamAgenticPreprocessingPlan } from '@/shared/api/preprocessing';
+import { streamAgenticPreprocessingPlan } from "@/shared/api/preprocessing";
 import PipelineGraph from '@/features/preprocessing/components/pipeline-graph/PipelineGraph';
 import ColumnTable from '@/features/preprocessing/components/ColumnTable';
 import ColumnStatsPanel from '@/features/preprocessing/components/ColumnStatsPanel';
