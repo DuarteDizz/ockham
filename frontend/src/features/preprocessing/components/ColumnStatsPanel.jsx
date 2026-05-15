@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart2, AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
-import { TYPE_META } from '@/features/preprocessing/support/preprocessingPlan';
+import { TYPE_META } from '@/features/preprocessing/lib/typeMeta';
 
 function formatValue(value) {
   if (value === null || value === undefined) return '—';

@@ -1,23 +1,24 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Plus, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { STEP_META, TYPE_META } from '@/features/preprocessing/lib/typeMeta';
 import {
-  TYPE_META,
-  addStepToColumn,
-  getCastOperationForColumn,
-  getCastTargets,
-  getCompatibleOperationsForType,
-  getEffectiveTypeFromColumnPlan,
+  CAST_OPERATIONS,
+  CAST_TARGETS,
+  STEP_OPTIONS_BY_TYPE,
   getNonCastSteps,
   getOperationCatalogForType,
-  getStepMeta,
   hasStepOperation,
-  isCastOperation,
+} from '@/features/preprocessing/lib/operationRegistry';
+import {
+  addStepToColumn,
+  getCastOperationForColumn,
+  getEffectiveTypeFromColumnPlan,
   removeStepFromColumn,
   replaceStepOperation,
   resetColumnPlan,
   setCastOperationForColumn,
-} from '@/features/preprocessing/support/preprocessingPlan';
+} from '@/features/preprocessing/lib/planEditing';
 
 function CollapsibleSection({ title, subtitle, badge, defaultOpen = true, children }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -60,10 +61,10 @@ function CollapsibleSection({ title, subtitle, badge, defaultOpen = true, childr
   );
 }
 
-function CastingControl({ column, columnPlan, plan, operationRegistry, onPlanChange }) {
-  const selectedOperation = getCastOperationForColumn(columnPlan, operationRegistry);
+function CastingControl({ column, columnPlan, plan, onPlanChange }) {
+  const selectedOperation = getCastOperationForColumn(columnPlan);
   const originalTypeMeta = TYPE_META[column?.inferred_type || columnPlan.inferred_type] || TYPE_META.text;
-  const effectiveType = getEffectiveTypeFromColumnPlan(columnPlan, operationRegistry);
+  const effectiveType = getEffectiveTypeFromColumnPlan(columnPlan);
   const effectiveTypeMeta = TYPE_META[effectiveType] || TYPE_META.text;
 
   return (
@@ -82,10 +83,10 @@ function CastingControl({ column, columnPlan, plan, operationRegistry, onPlanCha
     >
       <select
         value={selectedOperation}
-        onChange={(event) => onPlanChange(setCastOperationForColumn(plan, columnPlan.column_name, event.target.value, operationRegistry))}
+        onChange={(event) => onPlanChange(setCastOperationForColumn(plan, columnPlan.column_name, event.target.value))}
         className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-foreground outline-none focus:border-primary/40"
       >
-        {getCastTargets(operationRegistry).map((target) => (
+        {CAST_TARGETS.map((target) => (
           <option key={target.operation || 'none'} value={target.operation}>{target.label}</option>
         ))}
       </select>
@@ -96,11 +97,11 @@ function CastingControl({ column, columnPlan, plan, operationRegistry, onPlanCha
   );
 }
 
-function StepCard({ step, columnName, effectiveType, plan, operationRegistry, onPlanChange }) {
-  const meta = getStepMeta(operationRegistry, step.operation);
+function StepCard({ step, columnName, effectiveType, plan, onPlanChange }) {
+  const meta = STEP_META[step.operation] || STEP_META.drop_column;
   const Icon = meta.icon;
-  const compatible = getCompatibleOperationsForType(operationRegistry, effectiveType)
-    .filter((operation) => !isCastOperation(operationRegistry, operation));
+  const compatible = (STEP_OPTIONS_BY_TYPE[effectiveType] || STEP_OPTIONS_BY_TYPE.text)
+    .filter((operation) => !CAST_OPERATIONS.includes(operation));
 
   return (
     <motion.div
@@ -130,11 +131,11 @@ function StepCard({ step, columnName, effectiveType, plan, operationRegistry, on
       </div>
       <select
         value={step.operation}
-        onChange={(event) => onPlanChange(replaceStepOperation(plan, columnName, step.id, event.target.value, operationRegistry))}
+        onChange={(event) => onPlanChange(replaceStepOperation(plan, columnName, step.id, event.target.value))}
         className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-primary/40"
       >
         {compatible.map((operation) => (
-          <option key={operation} value={operation}>{getStepMeta(operationRegistry, operation).label || operation}</option>
+          <option key={operation} value={operation}>{STEP_META[operation]?.label || operation}</option>
         ))}
       </select>
       <div className="mt-2 flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
@@ -145,15 +146,15 @@ function StepCard({ step, columnName, effectiveType, plan, operationRegistry, on
   );
 }
 
-function OperationButton({ operation, columnPlan, plan, operationRegistry, onPlanChange }) {
-  const meta = getStepMeta(operationRegistry, operation);
+function OperationButton({ operation, columnPlan, plan, onPlanChange }) {
+  const meta = STEP_META[operation] || STEP_META.drop_column;
   const Icon = meta.icon;
   const alreadyAdded = hasStepOperation(columnPlan, operation);
 
   return (
     <button
       type="button"
-      onClick={() => onPlanChange(addStepToColumn(plan, columnPlan.column_name, operation, operationRegistry))}
+      onClick={() => onPlanChange(addStepToColumn(plan, columnPlan.column_name, operation))}
       disabled={alreadyAdded}
       className="group flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition-all disabled:cursor-default disabled:opacity-55 enabled:hover:-translate-y-0.5 enabled:hover:shadow-sm"
       style={{ background: `${meta.color}0d`, borderColor: `${meta.color}26`, color: meta.color }}
@@ -171,8 +172,8 @@ function OperationButton({ operation, columnPlan, plan, operationRegistry, onPla
   );
 }
 
-function OperationCatalog({ columnPlan, effectiveType, plan, operationRegistry, onPlanChange }) {
-  const groups = getOperationCatalogForType(operationRegistry, effectiveType);
+function OperationCatalog({ columnPlan, effectiveType, plan, onPlanChange }) {
+  const groups = getOperationCatalogForType(effectiveType);
 
   if (!groups.length) {
     return (
@@ -200,7 +201,6 @@ function OperationCatalog({ columnPlan, effectiveType, plan, operationRegistry, 
                   operation={operation}
                   columnPlan={columnPlan}
                   plan={plan}
-                  operationRegistry={operationRegistry}
                   onPlanChange={onPlanChange}
                 />
               ))}
@@ -212,7 +212,7 @@ function OperationCatalog({ columnPlan, effectiveType, plan, operationRegistry, 
   );
 }
 
-function OperationSequence({ steps, columnPlan, effectiveType, plan, operationRegistry, onPlanChange }) {
+function OperationSequence({ steps, columnPlan, effectiveType, plan, onPlanChange }) {
   return (
     <CollapsibleSection
       title="2. Current sequence"
@@ -230,7 +230,6 @@ function OperationSequence({ steps, columnPlan, effectiveType, plan, operationRe
                 columnName={columnPlan.column_name}
                 effectiveType={effectiveType}
                 plan={plan}
-                operationRegistry={operationRegistry}
                 onPlanChange={onPlanChange}
               />
             ))}
@@ -245,7 +244,7 @@ function OperationSequence({ steps, columnPlan, effectiveType, plan, operationRe
   );
 }
 
-export default function TransformPanel({ column, columnPlan, targetColumn, plan, operationRegistry, onPlanChange }) {
+export default function TransformPanel({ column, columnPlan, columns, targetColumn, plan, onPlanChange }) {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   if (!column || !columnPlan) {
@@ -260,11 +259,11 @@ export default function TransformPanel({ column, columnPlan, targetColumn, plan,
     );
   }
 
-  const effectiveType = getEffectiveTypeFromColumnPlan(columnPlan, operationRegistry);
+  const effectiveType = getEffectiveTypeFromColumnPlan(columnPlan);
   const typeMeta = TYPE_META[effectiveType] || TYPE_META.text;
   const originalTypeMeta = TYPE_META[column.inferred_type] || TYPE_META.text;
   const TypeIcon = typeMeta.icon;
-  const nonCastSteps = getNonCastSteps(columnPlan, operationRegistry);
+  const nonCastSteps = getNonCastSteps(columnPlan);
   const isDropped = columnPlan.steps.some((step) => step.operation === 'drop_column');
 
   return (
@@ -292,7 +291,7 @@ export default function TransformPanel({ column, columnPlan, targetColumn, plan,
           </button>
           <button
             type="button"
-            onClick={() => onPlanChange(resetColumnPlan(plan, columnPlan.column_name, targetColumn))}
+            onClick={() => onPlanChange(resetColumnPlan(plan, columns, columnPlan.column_name, targetColumn))}
             className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-muted-foreground transition-colors hover:text-foreground"
             title="Reset column plan"
           >
@@ -316,20 +315,18 @@ export default function TransformPanel({ column, columnPlan, targetColumn, plan,
             className="overflow-hidden"
           >
             <div className="space-y-3 p-4">
-              <CastingControl column={column} columnPlan={columnPlan} plan={plan} operationRegistry={operationRegistry} onPlanChange={onPlanChange} />
+              <CastingControl column={column} columnPlan={columnPlan} plan={plan} onPlanChange={onPlanChange} />
               <OperationSequence
                 steps={nonCastSteps}
                 columnPlan={columnPlan}
                 effectiveType={effectiveType}
                 plan={plan}
-                operationRegistry={operationRegistry}
                 onPlanChange={onPlanChange}
               />
               <OperationCatalog
                 columnPlan={columnPlan}
                 effectiveType={effectiveType}
                 plan={plan}
-                operationRegistry={operationRegistry}
                 onPlanChange={onPlanChange}
               />
             </div>
