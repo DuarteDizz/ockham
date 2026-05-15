@@ -163,7 +163,7 @@ def build_settings_config() -> EffectiveLlmConfig:
     )
 
 
-def public_llm_config_payload(config: EffectiveLlmConfig) -> LlmConfigResponse:
+def public_ai_config_payload(config: EffectiveLlmConfig) -> LlmConfigResponse:
     return LlmConfigResponse(
         provider=config.provider,
         model=config.model,

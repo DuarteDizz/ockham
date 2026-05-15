@@ -5,7 +5,7 @@ from __future__ import annotations
 from loguru import logger
 from langchain_ollama import ChatOllama
 
-from src.llm.runtime_config import EffectiveLlmConfig, llm_runtime_config_store
+from src.ai.runtime_config import EffectiveLlmConfig, llm_runtime_config_store
 
 
 def _ollama_openai_compatible_base_url(base_url: str | None) -> str:
