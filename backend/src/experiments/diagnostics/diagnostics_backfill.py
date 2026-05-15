@@ -1,4 +1,4 @@
-"""Background diagnostics enrichment for the top ranked models."""
+"""Background diagnostics enrichment for ranked experiment results."""
 
 from loguru import logger
 from sqlalchemy import select
@@ -6,7 +6,7 @@ from sqlalchemy import select
 from src.db.database import SessionLocal
 from src.db.models import Dataset, Experiment, ExperimentResult
 from src.modeling.diagnostics.model_diagnostics import build_model_diagnostics
-from src.services.persistence import write_diagnostics_back_to_record
+from src.experiments.persistence.experiment_repository import write_diagnostics_back_to_record
 
 
 def backfill_ranked_diagnostics(experiment_id, top_n=3):

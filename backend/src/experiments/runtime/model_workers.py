@@ -1,8 +1,8 @@
 """Worker-process helpers for per-model experiment execution."""
 
 from src.modeling.search.search_service import run_model_search
-from src.services.persistence import format_error_message
-from src.services.runtime import SPAWN_CONTEXT
+from src.experiments.persistence.experiment_repository import format_error_message
+from src.experiments.runtime.active_runs import SPAWN_CONTEXT
 
 
 def run_single_model(dataset_path, target_column, problem_type, model_id):

@@ -1,4 +1,4 @@
-"""Persistence helpers shared across experiment execution routes."""
+"""Persistence helpers for experiment records and results."""
 
 import uuid
 
