@@ -16,6 +16,7 @@ DATETIME_OPERATIONS = set(get_operations_by_stage("datetime"))
 ENCODING_OPERATIONS = set(get_operations_by_stage("encoding"))
 SCALING_OPERATIONS = set(get_operations_by_stage("scaling"))
 COLUMN_ACTION_OPERATIONS = set(get_operations_by_stage("column_action"))
+ROW_FILTER_OPERATIONS = {"drop_rows_missing"}
 VALID_OPERATIONS = get_all_operation_names()
 
 
@@ -26,6 +27,7 @@ def validate_preprocessing_plan(plan: dict[str, Any]) -> dict[str, Any]:
 
     target_column = plan.get("target_column")
     feature_count = 0
+    row_filter_missing_ratios: list[tuple[str | None, str | None, float]] = []
 
     for column_plan in plan.get("columns", []):
         column_name = column_plan.get("column_name")
@@ -52,6 +54,21 @@ def validate_preprocessing_plan(plan: dict[str, Any]) -> dict[str, Any]:
                     message="A dropped column cannot contain additional transformation steps.",
                 )
             )
+
+        if role == "target":
+            invalid_target_operations = [
+                operation for operation in operations if operation not in ROW_FILTER_OPERATIONS
+            ]
+            if invalid_target_operations:
+                errors.append(
+                    ValidationIssue(
+                        column_name=column_name,
+                        message=(
+                            "Target columns cannot receive preprocessing transformations; "
+                            "only drop_rows_missing is allowed to remove unlabeled rows."
+                        ),
+                    )
+                )
 
         previous_stage_order = -1
         seen_operations: set[str] = set()
@@ -106,6 +123,14 @@ def validate_preprocessing_plan(plan: dict[str, Any]) -> dict[str, Any]:
                 )
             previous_stage_order = stage_order
 
+            if operation == "drop_rows_missing":
+                evidence = step.get("evidence") or {}
+                try:
+                    missing_ratio = float(evidence.get("missing_ratio") or 0.0)
+                except (TypeError, ValueError):
+                    missing_ratio = 0.0
+                row_filter_missing_ratios.append((column_name, operation, missing_ratio))
+
             if operation in SCALING_OPERATIONS and effective_type not in {"numeric", "numeric_like_text"}:
                 errors.append(
                     ValidationIssue(
@@ -142,6 +167,19 @@ def validate_preprocessing_plan(plan: dict[str, Any]) -> dict[str, Any]:
                         message="Datetime operation was applied to a column that is not clearly datetime-like.",
                     )
                 )
+
+    if row_filter_missing_ratios:
+        estimated_upper_bound = min(1.0, sum(ratio for _, _, ratio in row_filter_missing_ratios))
+        if len(row_filter_missing_ratios) > 1 or estimated_upper_bound > 0.05:
+            warnings.append(
+                ValidationIssue(
+                    severity="warning",
+                    message=(
+                        "The plan removes rows with missing values. Review the cumulative row-loss impact, "
+                        f"especially because the missing-ratio upper bound is {estimated_upper_bound:.1%}."
+                    ),
+                )
+            )
 
     if feature_count == 0:
         errors.append(ValidationIssue(message="The preprocessing plan drops or excludes all features."))

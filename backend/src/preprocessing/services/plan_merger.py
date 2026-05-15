@@ -48,6 +48,26 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+
+def _is_noop_cast_decision(decision: dict[str, Any], column_profile: dict[str, Any]) -> bool:
+    operation = decision.get("operation")
+    target_type = CAST_EFFECTIVE_TYPES.get(operation)
+    if not target_type:
+        return False
+
+    inferred_type = column_profile.get("inferred_type")
+    effective_type = column_profile.get("effective_type") or inferred_type
+    return target_type == effective_type
+
+
+def _drop_noop_cast_decisions(decisions: list[dict[str, Any]], column_profile: dict[str, Any]) -> list[dict[str, Any]]:
+    """Remove cast steps that would not change the column representation."""
+    return [
+        decision
+        for decision in decisions
+        if not _is_noop_cast_decision(decision, column_profile)
+    ]
+
 def _append_required_imputer_if_missing(
     *,
     column_name: str,
@@ -152,6 +172,7 @@ def merge_agent_decisions(
             role = "target"
 
         raw_step_decisions = steps_by_column.get(column_name, [])
+        raw_step_decisions = _drop_noop_cast_decisions(raw_step_decisions, column_profile)
         if role not in {"target", "drop"}:
             raw_step_decisions = _append_required_imputer_if_missing(
                 column_name=column_name,
@@ -161,8 +182,12 @@ def merge_agent_decisions(
             )
 
         steps = _normalize_steps(column_name, raw_step_decisions)
-        if role in {"target", "drop"} and not any(step.operation == "drop_column" for step in steps):
-            steps = [] if role == "target" else [
+        if role == "target":
+            # The target must not receive feature transformations. The only
+            # supported target-side missing-value action is row filtering.
+            steps = [step for step in steps if step.operation == "drop_rows_missing"]
+        elif role == "drop" and not any(step.operation == "drop_column" for step in steps):
+            steps = [
                 PreprocessingStep(
                     id=f"step_{column_name}_drop_column",
                     operation="drop_column",

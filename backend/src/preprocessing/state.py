@@ -21,7 +21,6 @@ class PreprocessingState:
     merged_plan: dict[str, Any] = field(default_factory=dict)
     validation_result: dict[str, Any] = field(default_factory=dict)
     final_plan: dict[str, Any] = field(default_factory=dict)
-    explanation: dict[str, Any] = field(default_factory=dict)
 
     judge_decision: Literal["approve", "revise", "reject"] | None = None
     judge_reason: str = ""
@@ -40,7 +39,6 @@ class PreprocessingState:
         self.merged_plan = {}
         self.validation_result = {}
         self.final_plan = {}
-        self.explanation = {}
         self.judge_decision = None
         self.judge_reason = ""
         self.judge_user_message = None
