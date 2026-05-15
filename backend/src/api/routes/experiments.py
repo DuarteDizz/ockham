@@ -26,18 +26,18 @@ from src.db.models import Dataset, Experiment, ExperimentResult
 from src.modeling.registry.model_registry import get_model_config
 from src.modeling.diagnostics.model_diagnostics import build_model_diagnostics
 from src.modeling.search.search_space import get_available_validation_params
-from src.services.execution import run_experiment_job
-from src.services.experiments import (
+from src.experiments.application.execution_service import run_experiment_job
+from src.experiments.application.experiment_service import (
     build_training_state,
     create_experiment_record,
     validate_experiment_create_request,
 )
-from src.services.persistence import (
+from src.experiments.persistence.experiment_repository import (
     list_experiment_results,
     normalize_validation_bundle,
     write_diagnostics_back_to_record,
 )
-from src.services.runtime import stop_active_run_workers
+from src.experiments.runtime.active_runs import stop_active_run_workers
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 DB = Annotated[Session, Depends(get_session)]
