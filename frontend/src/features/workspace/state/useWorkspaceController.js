@@ -34,20 +34,20 @@ import {
   injectRocAucIntoResults,
   isDiagnosticsDashboardReady,
   isDiagnosticsFullyReady,
-} from '@/features/workspace/state/workspaceDiagnostics';
-import { sortUiResultsByRankingMode } from '@/features/workspace/state/workspaceResults';
+} from '@/features/workspace/lib/workspaceDiagnostics';
+import { sortUiResultsByRankingMode } from '@/features/workspace/lib/workspaceResults';
 import {
   buildUiTrainingState,
   delay,
   getEmptyLiveTrainingMeta,
   waitForExperimentToStop,
-} from '@/features/workspace/state/workspaceTraining';
+} from '@/features/workspace/lib/workspaceTraining';
 import {
   clearPersistedTrainingStartedAt,
   parseStartedAtMs,
   persistTrainingStartedAt,
   readPersistedTrainingStartedAt,
-} from '@/features/workspace/state/workspaceTrainingTimer';
+} from '@/features/workspace/lib/workspaceTrainingTimer';
 
 const DEFAULT_PROBLEM_TYPE = 'classification';
 const DEFAULT_RANKING_MODE = 'ockham';
