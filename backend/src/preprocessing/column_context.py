@@ -21,6 +21,36 @@ def build_column_context(series: pd.Series) -> ColumnAnalysisContext:
     raw_dtype = str(series.dtype)
     observed_series = series.dropna()
 
+    if pd.api.types.is_bool_dtype(series):
+        observed_text_series = build_observed_text_series(series)
+        return ColumnAnalysisContext(
+            name=str(series.name),
+            raw_dtype=raw_dtype,
+            original_series=series,
+            observed_series=observed_series,
+            observed_text_series=observed_text_series,
+            numeric_series=None,
+            datetime_series=None,
+            numeric_parse_ratio=None,
+            datetime_parse_ratio=None,
+            inferred_type="boolean",
+        )
+
+    if isinstance(series.dtype, pd.CategoricalDtype):
+        observed_text_series = build_observed_text_series(series)
+        return ColumnAnalysisContext(
+            name=str(series.name),
+            raw_dtype=raw_dtype,
+            original_series=series,
+            observed_series=observed_series,
+            observed_text_series=observed_text_series,
+            numeric_series=None,
+            datetime_series=None,
+            numeric_parse_ratio=None,
+            datetime_parse_ratio=None,
+            inferred_type="categorical",
+        )
+
     if pd.api.types.is_numeric_dtype(series):
         return ColumnAnalysisContext(
             name=str(series.name),
@@ -49,8 +79,7 @@ def build_column_context(series: pd.Series) -> ColumnAnalysisContext:
             inferred_type="datetime",
         )
 
-    observed_text_series = series.dropna().astype(str).str.strip()
-    observed_text_series = observed_text_series[observed_text_series != ""]
+    observed_text_series = build_observed_text_series(series)
 
     if observed_text_series.empty:
         return ColumnAnalysisContext(
@@ -113,3 +142,8 @@ def build_column_context(series: pd.Series) -> ColumnAnalysisContext:
         datetime_parse_ratio=datetime_parse_ratio,
         inferred_type=inferred_type,
     )
+
+
+def build_observed_text_series(series: pd.Series) -> pd.Series:
+    observed_text_series = series.dropna().astype(str).str.strip()
+    return observed_text_series[observed_text_series != ""]

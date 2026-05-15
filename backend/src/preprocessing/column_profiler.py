@@ -35,7 +35,7 @@ class ColumnProfiler:
         if context.inferred_type in {"datetime", "datetime_like_text"}:
             return compute_datetime_stats(context)
 
-        if context.inferred_type == "text":
+        if context.inferred_type in {"text", "categorical", "boolean"}:
             return compute_text_stats(context)
 
         return {}

@@ -83,6 +83,55 @@ def _is_low_cardinality_categorical(
     return False
 
 
+
+def _cast_target_for_semantic_type(context: dict[str, Any]) -> str | None:
+    """Return the intended cast target for a role/type correction, if any.
+
+    This helper is intentionally conservative. Casting should only be requested
+    when it changes the effective representation. Columns that are already
+    semantically aligned with their inferred/effective dtype must not be sent to
+    CastingAgent just to produce a no-op step such as numeric -> numeric.
+    """
+    recommended_role = context.get("recommended_role")
+    semantic_type = context.get("semantic_type")
+    effective_type = context.get("effective_type")
+
+    if recommended_role in {"target", "drop"}:
+        return None
+
+    if semantic_type in {"target", "identifier", "leakage_candidate"}:
+        return None
+
+    if semantic_type == "numeric_measure":
+        return "numeric" if effective_type in {"text", "numeric_like_text"} else None
+
+    if semantic_type == "datetime_feature":
+        return "datetime" if effective_type in {"text", "datetime_like_text"} else None
+
+    if semantic_type == "boolean_feature":
+        return "boolean" if effective_type != "boolean" else None
+
+    if semantic_type in {"categorical_feature", "high_cardinality_categorical"}:
+        return "categorical" if effective_type not in {"categorical"} else None
+
+    if semantic_type == "ordinal_feature":
+        # Numeric ordinal scales can be consumed by downstream agents without a
+        # casting step. Text/categorical ordinal labels may still benefit from
+        # categorical representation.
+        return "categorical" if effective_type in {"text", "numeric_like_text", "datetime_like_text"} else None
+
+    if semantic_type == "free_text":
+        return "text" if effective_type != "text" else None
+
+    return None
+
+
+def _needs_casting_decision(context: dict[str, Any]) -> bool:
+    target_type = _cast_target_for_semantic_type(context)
+    if not target_type:
+        return False
+    return target_type != context.get("effective_type")
+
 def _build_drop_policy(context: dict[str, Any]) -> tuple[bool, list[str]]:
     """Return (protected_from_drop, allowed_drop_reasons)."""
     column_name = context.get("column_name")
@@ -254,10 +303,19 @@ class AgentColumnContextBuilder:
             "top_pattern_ratio": specific.get("top_pattern_ratio"),
             "unique_pattern_count": specific.get("unique_pattern_count"),
             "parse_success_ratio": specific.get("parse_success_ratio"),
+            "min_datetime": specific.get("min_datetime"),
+            "max_datetime": specific.get("max_datetime"),
             "timespan_days": specific.get("timespan_days"),
             "has_time_component": specific.get("has_time_component"),
-            "monotonic_increasing": specific.get("monotonic_increasing"),
-            "monotonic_decreasing": specific.get("monotonic_decreasing"),
+            "year_unique_count": specific.get("year_unique_count"),
+            "month_unique_count": specific.get("month_unique_count"),
+            "day_unique_count": specific.get("day_unique_count"),
+            "weekday_unique_count": specific.get("weekday_unique_count"),
+            "hour_unique_count": specific.get("hour_unique_count"),
+            "is_monotonic_increasing": specific.get("is_monotonic_increasing"),
+            "is_monotonic_decreasing": specific.get("is_monotonic_decreasing"),
+            "monotonic_increasing": specific.get("is_monotonic_increasing"),
+            "monotonic_decreasing": specific.get("is_monotonic_decreasing"),
         }
 
         context["has_missing_values"] = (_safe_float(context.get("missing_ratio"), 0.0) or 0.0) > 0.0
@@ -274,7 +332,7 @@ class AgentColumnContextBuilder:
         return [
             context
             for context in self.build_all_contexts()
-            if not context.get("is_target")
+            if _needs_casting_decision(context)
         ]
 
     def for_feature_drop(self) -> list[dict[str, Any]]:
@@ -287,7 +345,11 @@ class AgentColumnContextBuilder:
     def for_missing_values(self) -> list[dict[str, Any]]:
         columns = []
         for context in self.build_all_contexts():
-            if context.get("is_target") or context.get("was_dropped"):
+            # Dropped feature columns should not receive missing-value operations.
+            # Target columns are intentionally kept when they have missing labels
+            # so MissingValueAgent can recommend drop_rows_missing instead of
+            # unsafe target imputation.
+            if context.get("was_dropped"):
                 continue
             missing_ratio = _safe_float(context.get("missing_ratio"), 0.0) or 0.0
             missing_count = _safe_float(context.get("missing_count"), 0.0) or 0.0
