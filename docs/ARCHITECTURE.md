@@ -42,16 +42,13 @@ Application shell, route composition, and top-level workflow entrypoints.
 Dataset upload, dataset listing, and dataset detail pages.
 
 ### `frontend/src/features/preprocessing/`
-Dataset profiling, agentic preprocessing run state, operation registry consumption, and preprocessing-plan editing UI.
+Dataset profiling, agentic preprocessing run state, operation registry consumption, and preprocessing-plan editing UI. Presentation components live under `components/`, while plan normalization, operation metadata, and column-profile helpers live under `lib/`.
 
 ### `frontend/src/features/experiments/`
-Experiment setup, model selection, live training state, and experiment dashboard entrypoints.
-
-### `frontend/src/features/ranking/`
-Leaderboard views, diagnostics cards, comparison components, and ranking-heavy presentation logic.
+Experiment setup, model selection, live training state, experiment dashboard entrypoints, and ranking-heavy presentation logic. Ranking components are nested under `features/experiments/ranking/` because they are only meaningful inside an experiment result context.
 
 ### `frontend/src/features/workspace/`
-Shared workspace state, polling behavior, and orchestration helpers reused across the main product flow.
+Shared workspace state and orchestration hooks. Pure helper functions live under `workspace/lib/`; React state composition remains under `workspace/state/`.
 
 ### `frontend/src/shared/`
 Shared API clients, reusable UI components, layout primitives, and common frontend utilities.
