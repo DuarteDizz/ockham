@@ -54,24 +54,20 @@ def parse_json_values(text: str, *, agent_name: str) -> list[Any]:
 
 
 def extract_nested_candidates(value: Any) -> list[Any]:
+    """Return plausible top-level response objects without profile echoes.
+
+    Older behavior expanded ``columns``/``features`` into decision candidates.
+    That made local-model payload echoes look like valid outputs and produced
+    misleading validation errors where profiler field names appeared as column
+    names. This function now only unwraps common response containers.
+    """
     candidates = [value]
     if isinstance(value, dict):
-        for key in ("system", "response", "result", "output"):
+        for key in ("system", "response", "result", "output", "data"):
             nested = value.get(key)
-            if isinstance(nested, dict):
+            if isinstance(nested, (dict, list)):
                 candidates.append(nested)
         system = value.get("system")
-        if isinstance(system, dict) and isinstance(system.get("response"), dict):
+        if isinstance(system, dict) and isinstance(system.get("response"), (dict, list)):
             candidates.append(system["response"])
-
-    expanded: list[Any] = []
-    for candidate in candidates:
-        if isinstance(candidate, dict):
-            for key in ("decisions", "columns", "features", "items"):
-                nested = candidate.get(key)
-                if isinstance(nested, (list, dict)):
-                    expanded.append({"decisions": nested} if key != "decisions" else candidate)
-            expanded.append(candidate)
-        else:
-            expanded.append(candidate)
-    return expanded
+    return candidates

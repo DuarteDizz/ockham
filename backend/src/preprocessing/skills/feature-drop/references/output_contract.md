@@ -1,60 +1,52 @@
 # Output contract
 
-Return one JSON object only. The top-level object must contain:
+Return one JSON object only. Do not write Markdown or explanatory prose outside the JSON object.
 
-- `agent_name`: exact agent name from `output_contract.agent_name`
-- `decisions`: array with exactly one decision per `output_contract.expected_columns` item
-- `warnings`: array of strings
+Use this compact top-level shape:
 
-Each decision must include:
+```json
+{
+  "decisions": [
+    {
+      "column_name": "<exact expected column name>",
+      "operation": "<allowed operation or null>",
+      "confidence": 0.84,
+      "reason": "Short technical reason grounded in profiler evidence.",
+      "evidence": {}
+    }
+  ]
+}
+```
 
-- `column_name`: exact source name from `output_contract.expected_columns`
-- `operation`: `drop_column` or JSON literal `null`
-- `confidence`: number from `0.0` to `1.0`
-- `reason`: concise technical reason grounded in profiler/context evidence
-- `evidence`: object containing concrete fields used in the decision
-- `alternatives_considered`: array of relevant alternatives with `reason_not_selected`
-- `params`: object; use `{}` when no parameters are required
-- `requires_user_review`: boolean
+`agent_name`, `warnings`, `alternatives_considered`, `params` and `requires_user_review` are optional. The backend fills safe defaults when they are omitted.
 
-## Evidence requirements
+## Required fields per decision
 
-For `drop_column`, `evidence` should include the specific structural reason and the fields that prove it. Use fields present in the payload, such as:
+- `column_name`: exact source name from the expected column list.
+- `operation`: one allowed operation for this agent, or JSON literal `null`.
+- `confidence`: number from `0.0` to `1.0`.
+- `reason`: concise technical reason grounded in profiler evidence.
+- `evidence`: object containing concrete profiler fields used in the decision.
 
-- `allowed_drop_reasons`
-- `protected_from_drop`
-- `semantic_type`
-- `recommended_role`
-- `risk_level`
-- `is_constant`
-- `is_mostly_missing`
-- `missing_ratio`
-- `unique_ratio`
-- `is_identifier_candidate`
-- `is_free_text_candidate`
-- `avg_length`
-- `max_length`
+## Invalid output shapes
 
-For `operation=null`, `evidence` should explain why the feature is kept or sent to review, for example:
+Do not return a column-keyed map.
 
-- protected by backend policy;
-- ordinary numeric/categorical/datetime feature;
-- high cardinality without identifier evidence;
-- ambiguous leakage;
-- potentially valuable free text;
-- meaningful missingness.
+Do not return `operations` instead of `decisions`.
 
-## Alternative requirements
+Do not echo the input payload.
 
-`alternatives_considered` should compare the chosen action against the realistic alternative:
+Invalid top-level keys include:
 
-- If `drop_column` is selected, include `operation: null` and explain why keeping the column is less safe.
-- If `operation=null` is selected, include `operation: "drop_column"` and explain why automatic removal is not justified.
+- `columns`
+- `output_contract`
+- `allowed_operations`
+- `operation_null_meaning`
+- `skill`
+- `task`
 
-## Review requirements
+## Column coverage requirement
 
-Use `requires_user_review=true` when the evidence is ambiguous, business-sensitive or potentially risky but not strong enough for automatic removal.
+The `decisions` array must contain exactly one decision for every expected column.
 
-Do not write Markdown or explanatory prose outside the JSON object.
-Do not use string aliases for null operations.
-Do not invent operations beyond `drop_column` and JSON literal `null`.
+Do not omit columns. Do not rename columns. Do not return unknown columns.

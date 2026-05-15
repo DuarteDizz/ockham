@@ -1,52 +1,52 @@
 # Output contract
 
-Return one JSON object only. The top-level object must contain:
+Return one JSON object only. Do not write Markdown or explanatory prose outside the JSON object.
 
-- `agent_name`: exact agent name from `output_contract.agent_name`
-- `decisions`: array with exactly one decision per `output_contract.expected_columns` item
-- `warnings`: array of strings
+Use this compact top-level shape:
 
-Each decision must include:
+```json
+{
+  "decisions": [
+    {
+      "column_name": "<exact expected column name>",
+      "operation": "<allowed operation or null>",
+      "confidence": 0.84,
+      "reason": "Short technical reason grounded in profiler evidence.",
+      "evidence": {}
+    }
+  ]
+}
+```
 
-- `column_name`: exact source name from `output_contract.expected_columns`
-- `operation`: one allowed operation from `output_contract.allowed_operations`, or JSON literal `null`
-- `confidence`: number from 0.0 to 1.0
-- `reason`: concise technical reason grounded in profiler evidence
-- `evidence`: object containing concrete profiler fields used in the decision
-- `alternatives_considered`: array of relevant alternatives with `reason_not_selected`
-- `params`: object; use `{}` when no parameters are required
-- `requires_user_review`: boolean
+`agent_name`, `warnings`, `alternatives_considered`, `params` and `requires_user_review` are optional. The backend fills safe defaults when they are omitted.
 
-## Operation-specific params
+## Required fields per decision
 
-- `drop_rows_missing`: `{"scope":"missing_in_column"}`
-- `constant_imputer`: include `fill_value` when a placeholder is chosen, for example `{"fill_value":"__MISSING__"}`
-- `mean_imputer`, `median_imputer`, `most_frequent_imputer`: use `{}` unless the runtime contract provides explicit parameters
+- `column_name`: exact source name from the expected column list.
+- `operation`: one allowed operation for this agent, or JSON literal `null`.
+- `confidence`: number from `0.0` to `1.0`.
+- `reason`: concise technical reason grounded in profiler evidence.
+- `evidence`: object containing concrete profiler fields used in the decision.
 
-## Required evidence by operation
+## Invalid output shapes
 
-For `drop_rows_missing`, evidence must include:
+Do not return a column-keyed map.
 
-- `missing_count`
-- `missing_ratio`
-- `row_count`
-- `effective_type`
-- why row removal is safer than imputation
+Do not return `operations` instead of `decisions`.
 
-For numeric imputers, evidence should include available distribution signals such as:
+Do not echo the input payload.
 
-- `skewness`
-- `outlier_ratio_iqr`
-- `outlier_ratio_zscore`
-- `mean`
-- `median`
+Invalid top-level keys include:
 
-For categorical, text-like categorical or boolean imputers, evidence should include available concentration signals such as:
+- `columns`
+- `output_contract`
+- `allowed_operations`
+- `operation_null_meaning`
+- `skill`
+- `task`
 
-- `unique_count`
-- `unique_ratio`
-- `top_1_ratio`
-- `rare_value_ratio`
+## Column coverage requirement
 
-Do not write Markdown or explanatory prose outside the JSON object.
-Do not use string aliases for null operations.
+The `decisions` array must contain exactly one decision for every expected column.
+
+Do not omit columns. Do not rename columns. Do not return unknown columns.

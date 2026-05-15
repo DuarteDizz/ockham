@@ -1,58 +1,64 @@
 # Output contract
 
-Return one JSON object only. The top-level object must contain:
+Return one JSON object only. Do not write Markdown or explanatory prose outside the JSON object.
 
-- `agent_name`: exactly `"ColumnRoleAgent"`
-- `decisions`: array with exactly one decision per `output_contract.expected_columns` item
-- `warnings`: array of strings
+Use this compact top-level shape:
 
-Each decision must include:
+```json
+{
+  "decisions": [
+    {
+      "column_name": "<exact expected column name>",
+      "semantic_type": "numeric_measure",
+      "recommended_role": "feature",
+      "risk_level": "low",
+      "confidence": 0.84,
+      "reason": "Short classification reason grounded in profiler evidence.",
+      "evidence": {}
+    }
+  ]
+}
+```
 
-- `column_name`: exact source name from `output_contract.expected_columns`
-- `semantic_type`: one value from `output_contract.allowed_semantic_types`
-- `recommended_role`: one value from `output_contract.allowed_recommended_roles`
-- `risk_level`: one value from `output_contract.allowed_risk_levels`
-- `confidence`: number from `0.0` to `1.0`
-- `reason`: concise technical classification reason grounded in profiler evidence
-- `evidence`: object containing concrete profiler fields used in the classification
+`agent_name` and `warnings` are optional. The backend fills safe defaults when they are omitted.
 
-## Evidence requirements
+## Required fields per decision
 
-Every `evidence` object must include at least:
+- `column_name`: exact source name from the expected column list.
+- `semantic_type`: one supported semantic type.
+- `recommended_role`: `feature`, `target`, `drop` or `review`.
+- `risk_level`: `low`, `medium` or `high`.
+- `confidence`: number from `0.0` to `1.0`.
+- `reason`: concise classification reason grounded in profiler evidence.
+- `evidence`: object containing concrete profiler fields used in the decision.
 
-- `inferred_type`
-- `unique_count` or `unique_ratio` when available
-- `missing_ratio` when available
+## Invalid fields for ColumnRoleAgent
 
-Add the fields that drove the decision, for example:
+Do not return:
 
-- `raw_dtype`
-- `row_count`
-- `missing_count`
-- `is_constant`
-- `is_mostly_missing`
-- `numeric_parse_ratio`
-- `datetime_parse_ratio`
-- `avg_length`
-- `max_length`
-- `top_1_ratio`
-- `rare_value_ratio`
-- `normalized_entropy`
-- `unique_pattern_count`
-- `top_pattern_ratio`
-- `name_signal`
+- `operation`
+- `params`
+- `requires_user_review`
+- `alternatives_considered`
 
-## Confidence guidance
+Use `recommended_role`, not `role`.
 
-- `0.90-1.00`: direct target, constant, clear ID, clear dtype or strong deterministic evidence.
-- `0.75-0.89`: strong but not perfect multi-field evidence.
-- `0.55-0.74`: plausible classification with ambiguity; usually pair with `recommended_role=review` when risk matters.
-- `<0.55`: evidence is weak or conflicting; use `semantic_type=unknown` or `recommended_role=review`.
+## Invalid output shapes
 
-## Forbidden output
+Do not return a column-keyed map.
 
-- Do not include `operation` for ColumnRoleAgent decisions.
-- Do not include Markdown or prose outside the JSON object.
-- Do not omit a column from `output_contract.expected_columns`.
-- Do not add decisions for columns that were not provided.
-- Do not use labels outside the allowed enums.
+Do not echo the input payload.
+
+Invalid top-level keys include:
+
+- `columns`
+- `output_contract`
+- `allowed_operations`
+- `skill`
+- `task`
+
+## Column coverage requirement
+
+The `decisions` array must contain exactly one decision for every expected column.
+
+Do not omit columns. Do not rename columns. Do not return unknown columns.

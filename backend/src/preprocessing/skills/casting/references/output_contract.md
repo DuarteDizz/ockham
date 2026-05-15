@@ -1,62 +1,52 @@
 # Output contract
 
-Return one JSON object only. The top-level object must contain:
+Return one JSON object only. Do not write Markdown or explanatory prose outside the JSON object.
 
-- `agent_name`: exact agent name from `output_contract.agent_name`
-- `decisions`: array with exactly one decision per `output_contract.expected_columns` item
-- `warnings`: array of strings
+Use this compact top-level shape:
 
-Each decision must include:
+```json
+{
+  "decisions": [
+    {
+      "column_name": "<exact expected column name>",
+      "operation": "<allowed operation or null>",
+      "confidence": 0.84,
+      "reason": "Short technical reason grounded in profiler evidence.",
+      "evidence": {}
+    }
+  ]
+}
+```
 
-- `column_name`: exact source name from `output_contract.expected_columns`
-- `operation`: one allowed operation from `output_contract.allowed_operations`, or JSON literal `null`
-- `confidence`: number from 0.0 to 1.0
-- `reason`: concise technical reason grounded in profiler evidence
-- `evidence`: object containing concrete profiler fields used in the decision
-- `alternatives_considered`: array of relevant alternatives with `operation` and `reason_not_selected`
-- `params`: object; use `{}` when no parameters are required
-- `requires_user_review`: boolean
+`agent_name`, `warnings`, `alternatives_considered`, `params` and `requires_user_review` are optional. The backend fills safe defaults when they are omitted.
 
+## Required fields per decision
 
-## No-op cast rule
+- `column_name`: exact source name from the expected column list.
+- `operation`: one allowed operation for this agent, or JSON literal `null`.
+- `confidence`: number from `0.0` to `1.0`.
+- `reason`: concise technical reason grounded in profiler evidence.
+- `evidence`: object containing concrete profiler fields used in the decision.
 
-If the cast target is the same as the column's current `effective_type` or `inferred_type`, return `operation=null`. Do not return no-op cast steps such as `cast_numeric` for an already numeric column.
+## Invalid output shapes
 
-## Decision-specific expectations
+Do not return a column-keyed map.
 
-For `cast_numeric`:
+Do not return `operations` instead of `decisions`.
 
-- `evidence` must include `numeric_parse_ratio`, `semantic_type`, `effective_type` and at least one signal that identifier/code risk was considered.
-- `reason` must explain why the column is a numeric measure rather than a code.
+Do not echo the input payload.
 
-For `cast_datetime`:
+Invalid top-level keys include:
 
-- `evidence` must include `datetime_parse_ratio`, `semantic_type` and `effective_type`.
-- `reason` must explain why the column is a temporal feature and not a period code, ID or leakage proxy.
+- `columns`
+- `output_contract`
+- `allowed_operations`
+- `operation_null_meaning`
+- `skill`
+- `task`
 
-For `cast_boolean`:
+## Column coverage requirement
 
-- `evidence` must include `semantic_type`, `unique_count` and the boolean-like signal available in the payload.
-- `reason` must explain why boolean semantics are safer than categorical semantics.
+The `decisions` array must contain exactly one decision for every expected column.
 
-For `cast_categorical`:
-
-- `evidence` must include `semantic_type`, `unique_count`, `unique_ratio` and text/cardinality evidence.
-- `reason` must explain why the values are reusable labels rather than identifiers or free text.
-
-For `cast_text`:
-
-- `evidence` must include `semantic_type` and text-length evidence such as `avg_length` or `max_length`.
-- `reason` must explain why free-text representation is safer than categorical representation.
-
-For `operation=null`:
-
-- `reason` must state whether no cast is needed, casting is unsafe, the column is protected, or review is required.
-- Use `requires_user_review=true` when casting is plausible but risky.
-
-## Strict formatting rules
-
-Do not write Markdown or explanatory prose outside the JSON object.
-Do not use string aliases for null operations.
-Do not invent operations or parameters.
-Use exact column names from the expected columns list.
+Do not omit columns. Do not rename columns. Do not return unknown columns.

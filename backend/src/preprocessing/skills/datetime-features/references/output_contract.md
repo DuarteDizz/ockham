@@ -1,148 +1,52 @@
-# Datetime Features Output Contract
+# Output contract
 
-Return one JSON object only. The top-level object must contain:
+Return one JSON object only. Do not write Markdown or explanatory prose outside the JSON object.
 
-- `agent_name`
-- `decisions`
-- `warnings`
-
-Do not write Markdown or explanatory prose outside the JSON object.
-
-## Top-level shape
+Use this compact top-level shape:
 
 ```json
 {
-  "agent_name": "DatetimeFeatureAgent",
-  "decisions": [],
-  "warnings": []
-}
-```
-
-## Decision shape
-
-Each decision must use the exact column name from `output_contract.expected_columns`.
-
-```json
-{
-  "column_name": "created_at",
-  "operation": "extract_datetime_features",
-  "confidence": 0.87,
-  "reason": "The column has strong datetime evidence and meaningful month/weekday variation without explicit leakage signals.",
-  "evidence": {
-    "effective_type": "datetime",
-    "semantic_type": "datetime_feature",
-    "parse_success_ratio": 1.0,
-    "datetime_parse_ratio": 1.0,
-    "timespan_days": 730,
-    "month_unique_count": 12,
-    "weekday_unique_count": 7,
-    "has_time_component": false
-  },
-  "alternatives_considered": [
+  "decisions": [
     {
-      "operation": "drop_original_datetime",
-      "reason_not_selected": "Derived components preserve useful calendar signal more safely than retaining only a raw timestamp."
+      "column_name": "<exact expected column name>",
+      "operation": "<allowed operation or null>",
+      "confidence": 0.84,
+      "reason": "Short technical reason grounded in profiler evidence.",
+      "evidence": {}
     }
-  ],
-  "params": {
-    "components": ["year", "month", "day", "weekday"],
-    "drop_original": true
-  },
-  "requires_user_review": false
+  ]
 }
 ```
 
-## Allowed operations
+`agent_name`, `warnings`, `alternatives_considered`, `params` and `requires_user_review` are optional. The backend fills safe defaults when they are omitted.
 
-- `extract_datetime_features`
-- `drop_original_datetime`
-- `null`
+## Required fields per decision
 
-Use JSON literal `null`, not the string `"null"`.
+- `column_name`: exact source name from the expected column list.
+- `operation`: one allowed operation for this agent, or JSON literal `null`.
+- `confidence`: number from `0.0` to `1.0`.
+- `reason`: concise technical reason grounded in profiler evidence.
+- `evidence`: object containing concrete profiler fields used in the decision.
 
-## Required evidence fields
+## Invalid output shapes
 
-Include all available fields relevant to the decision:
+Do not return a column-keyed map.
 
-- `effective_type`
-- `semantic_type`
-- `recommended_role`
-- `risk_level`
-- `datetime_parse_ratio`
-- `parse_success_ratio`
-- `min_datetime`
-- `max_datetime`
-- `timespan_days`
-- `has_time_component`
-- `year_unique_count`
-- `month_unique_count`
-- `day_unique_count`
-- `weekday_unique_count`
-- `hour_unique_count`
-- `is_monotonic_increasing`
-- `is_monotonic_decreasing`
-- `unique_count`
-- `unique_ratio`
+Do not return `operations` instead of `decisions`.
 
-Do not fabricate missing evidence. If a field is unavailable, omit it or set it to `null` only when it was explicitly present as null in the payload.
+Do not echo the input payload.
 
-## Params by operation
+Invalid top-level keys include:
 
-### `extract_datetime_features`
+- `columns`
+- `output_contract`
+- `allowed_operations`
+- `operation_null_meaning`
+- `skill`
+- `task`
 
-Recommended params:
+## Column coverage requirement
 
-```json
-{
-  "components": ["year", "month", "day", "weekday"],
-  "drop_original": true
-}
-```
+The `decisions` array must contain exactly one decision for every expected column.
 
-Allowed component names:
-
-- `year`
-- `quarter`
-- `month`
-- `day`
-- `weekday`
-- `hour`
-
-Only include components justified by variation evidence. Do not include unsupported components such as holidays, lags, rolling windows, business calendars or time-since-target.
-
-### `drop_original_datetime`
-
-Recommended params:
-
-```json
-{
-  "reason_code": "raw_datetime_not_model_ready"
-}
-```
-
-Use a concise `reason_code`, such as:
-
-- `low_temporal_variation`
-- `raw_datetime_not_model_ready`
-- `possible_ingestion_timestamp`
-- `possible_post_event_timestamp`
-- `unsafe_temporal_feature`
-
-### `null`
-
-Use empty params:
-
-```json
-{}
-```
-
-If null is chosen because of ambiguity or risk, set `requires_user_review=true`.
-
-## Required warnings
-
-Add a warning when:
-
-- a datetime-like column has weak parse evidence;
-- a timestamp may be post-event or unavailable at prediction time;
-- a monotonic timestamp looks like ingestion/order metadata;
-- extraction is skipped due to insufficient supported operation coverage.
+Do not omit columns. Do not rename columns. Do not return unknown columns.
