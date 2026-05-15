@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from src.db.database import SessionLocal
 from src.db.models import Dataset, Experiment, ExperimentResult
-from src.ml.search.diagnostics import build_model_diagnostics
+from src.modeling.diagnostics.model_diagnostics import build_model_diagnostics
 from src.services.persistence import write_diagnostics_back_to_record
 
 
