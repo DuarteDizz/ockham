@@ -1,5 +1,5 @@
 import React from 'react';
-import LlmSettingsPanel from './LlmSettingsPanel';
+import AiSettingsPanel from './AiSettingsPanel';
 
 export default function TopHeader({ datasetName, status, problemType, setProblemType, rankingMode, setRankingMode, activeView }) {
   const isProblemTypeLocked = status === 'processing';
@@ -56,7 +56,7 @@ export default function TopHeader({ datasetName, status, problemType, setProblem
             ))}
           </div>
           <span className={`rounded-full px-3 py-2 text-xs font-semibold ${statusMeta.className}`}>{statusMeta.label}</span>
-          <LlmSettingsPanel />
+          <AiSettingsPanel />
         </div>
       </div>
     </header>

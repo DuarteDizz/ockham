@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, KeyRound, Loader2, RotateCcw, ShieldCheck, X } from 'lucide-react';
 
-import { getLlmConfig, resetLlmConfig, updateLlmConfig } from '@/shared/api/llmConfig';
+import { getAiConfig, resetAiConfig, updateAiConfig } from '@/shared/api/aiConfig';
 
 const PROVIDERS = [
   { key: 'ollama', label: 'Ollama', hint: 'Default local model. No API key required.' },
@@ -24,7 +24,7 @@ function defaultBaseUrlForProvider(provider) {
   return 'https://api.openai.com/v1';
 }
 
-export default function LlmSettingsPanel() {
+export default function AiSettingsPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +50,7 @@ export default function LlmSettingsPanel() {
     setIsLoading(true);
     setError(null);
     try {
-      const nextConfig = await getLlmConfig();
+      const nextConfig = await getAiConfig();
       setConfig(nextConfig);
       setForm({
         provider: nextConfig.provider || 'ollama',
@@ -62,7 +62,7 @@ export default function LlmSettingsPanel() {
         timeoutSeconds: nextConfig.timeout_seconds ?? 120,
       });
     } catch (nextError) {
-      setError(nextError.message || 'Unable to load LLM configuration.');
+      setError(nextError.message || 'Unable to load AI configuration.');
     } finally {
       setIsLoading(false);
     }
@@ -107,12 +107,12 @@ export default function LlmSettingsPanel() {
         timeout_seconds: Number(form.timeoutSeconds),
       };
 
-      const nextConfig = await updateLlmConfig(payload);
+      const nextConfig = await updateAiConfig(payload);
       setConfig(nextConfig);
       setForm((current) => ({ ...current, apiKey: '' }));
-      setMessage('LLM configuration saved on the backend. The API key was not returned to the frontend.');
+      setMessage('AI configuration saved on the backend. The API key was not returned to the frontend.');
     } catch (nextError) {
-      setError(nextError.message || 'Unable to save LLM configuration.');
+      setError(nextError.message || 'Unable to save AI configuration.');
     } finally {
       setIsSaving(false);
     }
@@ -124,7 +124,7 @@ export default function LlmSettingsPanel() {
     setMessage(null);
 
     try {
-      const nextConfig = await resetLlmConfig();
+      const nextConfig = await resetAiConfig();
       setConfig(nextConfig);
       setForm({
         provider: nextConfig.provider || 'ollama',
@@ -135,9 +135,9 @@ export default function LlmSettingsPanel() {
         maxTokens: nextConfig.max_tokens ?? 1000,
         timeoutSeconds: nextConfig.timeout_seconds ?? 120,
       });
-      setMessage('LLM configuration reset to backend defaults.');
+      setMessage('AI configuration reset to backend defaults.');
     } catch (nextError) {
-      setError(nextError.message || 'Unable to reset LLM configuration.');
+      setError(nextError.message || 'Unable to reset AI configuration.');
     } finally {
       setIsSaving(false);
     }
@@ -151,7 +151,7 @@ export default function LlmSettingsPanel() {
         className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-3 py-2 text-xs font-semibold text-ockham-navy shadow-[0_10px_20px_rgba(10,73,194,0.08)] transition hover:bg-white"
       >
         <KeyRound className="h-3.5 w-3.5" />
-        LLM
+        AI
         {config?.provider ? (
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-500">
             {config.provider.replace('_', ' ')}
@@ -163,7 +163,7 @@ export default function LlmSettingsPanel() {
         <div className="absolute right-0 top-12 z-50 w-[420px] rounded-[28px] border border-white/70 bg-white/95 p-4 text-left shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-xl">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-ockham-cyan">LLM Runtime</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-ockham-cyan">AI Runtime</p>
               <h3 className="mt-1 font-heading text-xl font-extrabold tracking-[-0.04em] text-foreground">
                 Model provider
               </h3>

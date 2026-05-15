@@ -8,8 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes.datasets import router as datasets_router
 from src.api.routes.experiments import router as experiments_router
-from src.api.routes.llm_config import router as llm_config_router
-from src.api.routes.preprocessing import registry_router as preprocessing_registry_router
+from src.api.routes.ai_config import router as ai_config_router
 from src.api.routes.preprocessing import router as preprocessing_router
 from src.api.routes.models import router as models_router
 from src.config import configure_logging, settings
@@ -22,8 +21,8 @@ configure_logging()
 def _resolve_cors_origins(raw_value: str) -> list[str]:
     """Keep CORS parsing close to the HTTP entrypoint.
 
-    The movie project keeps settings simple and leaves small runtime transforms
-    near the place where they are used. We follow the same rule here.
+    Keep small runtime transforms close to the HTTP entrypoint so configuration
+    remains predictable and easy to audit.
     """
     return [item.strip() for item in raw_value.split(",") if item.strip()]
 
@@ -78,9 +77,8 @@ async def add_api_safety_headers(request: Request, call_next):
 app.include_router(datasets_router)
 app.include_router(models_router)
 app.include_router(experiments_router)
-app.include_router(llm_config_router)
+app.include_router(ai_config_router)
 app.include_router(preprocessing_router)
-app.include_router(preprocessing_registry_router)
 
 
 @app.get("/health", tags=["health"])

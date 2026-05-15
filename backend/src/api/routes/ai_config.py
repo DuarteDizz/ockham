@@ -1,4 +1,4 @@
-"""LLM runtime configuration endpoints.
+"""AI runtime configuration endpoints.
 
 API keys submitted here are accepted by the backend, kept in memory, and never
 returned to the frontend. The default configuration remains local Ollama.
@@ -6,26 +6,26 @@ returned to the frontend. The default configuration remains local Ollama.
 
 from fastapi import APIRouter, HTTPException
 
-from src.llm.runtime_config import (
+from src.ai.runtime_config import (
     LlmConfigResponse,
     LlmConfigUpdateRequest,
     llm_runtime_config_store,
-    public_llm_config_payload,
+    public_ai_config_payload,
 )
 
-router = APIRouter(prefix="/llm", tags=["llm"])
+router = APIRouter(prefix="/ai", tags=["ai"])
 
 
 @router.get("/config", response_model=LlmConfigResponse)
-def get_llm_config() -> LlmConfigResponse:
-    """Return the active LLM configuration without exposing secrets."""
+def get_ai_config() -> LlmConfigResponse:
+    """Return the active AI configuration without exposing secrets."""
     config = llm_runtime_config_store.get_effective_config()
-    return public_llm_config_payload(config)
+    return public_ai_config_payload(config)
 
 
 @router.post("/config", response_model=LlmConfigResponse)
-def update_llm_config(payload: LlmConfigUpdateRequest) -> LlmConfigResponse:
-    """Update the backend-only runtime LLM configuration.
+def update_ai_config(payload: LlmConfigUpdateRequest) -> LlmConfigResponse:
+    """Update the backend-only runtime AI configuration.
 
     The API key may be sent to this endpoint, but it is not persisted and is not
     included in the response payload.
@@ -42,11 +42,11 @@ def update_llm_config(payload: LlmConfigUpdateRequest) -> LlmConfigResponse:
             )
 
     config = llm_runtime_config_store.update(payload)
-    return public_llm_config_payload(config)
+    return public_ai_config_payload(config)
 
 
 @router.post("/config/reset", response_model=LlmConfigResponse)
-def reset_llm_config() -> LlmConfigResponse:
+def reset_ai_config() -> LlmConfigResponse:
     """Reset the runtime config to settings defaults, usually Ollama."""
     config = llm_runtime_config_store.reset()
-    return public_llm_config_payload(config)
+    return public_ai_config_payload(config)
